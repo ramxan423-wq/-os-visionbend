@@ -185,8 +185,8 @@ struct MultiBendPlannerView: View {
             let n = 5
             steps = (0..<n).map { (first + Double($0) * run / Double(n - 1), angle / Double(n), "Up") }
         case "Compound 90°":
-            message = "Compound 90 needs exact bender calibration and verified physical mark geometry; enter custom marks."
-            return
+            guard let radius = number(centerlineRadius), radius > 0 else { message = "Enter verified bend radius."; return }
+            steps = [(rise, 90, "Up"), (rise + run + radius * .pi / 2, 90, "Right")]
         default:
             message = "Choose a preset or add custom marks."
             return
