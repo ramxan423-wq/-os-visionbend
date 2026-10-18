@@ -28,8 +28,12 @@ struct ConduitCutOptimizerView: View {
               length.isFinite, blade.isFinite, length > 0, blade >= 0 else {
             result = "Invalid stock length or saw kerf."; return
         }
-        let pieces = cuts.split(whereSeparator: { $0 == "," || $0 == ";" || $0 == "\n" })
-            .compactMap { parse(String($0)) }.sorted(by: >)
+        let entries = cuts.split(whereSeparator: { $0 == "," || $0 == ";" || $0 == "\n" })
+        let parsed = entries.map { parse(String($0)) }
+        guard parsed.allSatisfy({ $0 != nil }) else {
+            result = "Invalid piece length. Check every entered value."; return
+        }
+        let pieces = parsed.compactMap { $0 }.sorted(by: >)
         guard !pieces.isEmpty, pieces.count <= 500, pieces.allSatisfy({ $0.isFinite && $0 > 0 && $0 + blade <= length }) else {
             result = "Enter 1–500 positive pieces, each fitting the stock."; return
         }
