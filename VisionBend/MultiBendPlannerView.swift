@@ -195,10 +195,16 @@ struct MultiBendPlannerView: View {
         tradeSize = item.tradeSize
         referenceMark = item.id.hasPrefix("greenlee-555") ? "Hook Front" : "Arrow"
         if let deduct = item.deductInches { takeUp = String(format: "%.4f", deduct * factor) }
-        if let radius = item.radiusInches { centerlineRadius = String(format: "%.4f", radius * factor) }
+        if let radius = item.radiusInches {
+            centerlineRadius = String(format: "%.4f", radius * factor)
+        } else {
+            centerlineRadius = "" // Never retain a different shoe\'s radius.
+        }
         correction = "0"
         manualSource = item.sourceURL
-        message = "Verified profile loaded. Stub arrow take-up and centerline radius now use this model and selected units. Check field springback."
+        message = item.radiusInches == nil
+            ? "Verified deduct loaded. This shoe radius is NOT verified; enter a documented radius for 3D and compound geometry."
+            : "Verified deduct and radius loaded. Check reference mark and field springback."
     }
 
     private func generatePreset() {
