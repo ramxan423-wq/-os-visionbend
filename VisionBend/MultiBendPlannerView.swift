@@ -27,6 +27,8 @@ struct MultiBendPlannerView: View {
     @State private var manualSource = ""
     @State private var desiredStub = ""
     @State private var pdfURL: URL?
+    @AppStorage("visionbend.units") private var selectedUnits = 0
+    private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
 
     private var length: Double { Double(conduitLength) ?? 0 }
@@ -40,7 +42,7 @@ struct MultiBendPlannerView: View {
 
     var body: some View {
         Form {
-            Section("Conduit (use one consistent unit)") {
+            Section("Conduit (all values in " + unitLabel + ")") {
                 TextField("Conduit length", text: $conduitLength).keyboardType(.decimalPad)
                 TextField("Minimum straight between marks", text: $minStraight).keyboardType(.decimalPad)
             }
@@ -89,7 +91,7 @@ struct MultiBendPlannerView: View {
                     .foregroundStyle(valid ? .green : .red)
             }
             Section("Apple Watch") {
-                Button("Send Marks to Watch") { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: "selected units") }
+                Button("Send Marks to Watch") { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
                     .disabled(marks.isEmpty || !valid)
                 Text(watchSync.status).font(.caption)
             }
@@ -126,9 +128,15 @@ struct MultiBendPlannerView: View {
     }
 
     private func addCalibratedMark() {
-        guard !manufacturer.isEmpty, !benderModel.isEmpty, !tradeSize.isEmpty, !manualSource.isEmpty,
-              let take = Double(takeUp), let offset = Double(correction), let desired = Double(desiredStub) else {
-            message = "Enter exact bender details, documented take-up and stub length."
+        guard !manufacturer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !benderModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !tradeSize.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !manualSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              referenceMark.lowercased() == "arrow",
+              let take = Double(takeUp.replacingOccurrences(of: ",", with: ".")),
+              let offset = Double(correction.replacingOccurrences(of: ",", with: ".")),
+              let desired = Double(desiredStub.replacingOccurrences(of: ",", with: ".")) else {
+            message = "Enter documented arrow take-up and exact model. Star/other marks need a different formula."
             return
         }
         let calibration = BenderCalibration(manufacturer: manufacturer, model: benderModel, conduit: conduitType, tradeSize: tradeSize, referenceMark: referenceMark, takeUp: take, fieldCorrection: offset, source: manualSource)
@@ -149,7 +157,7 @@ struct MultiBendPlannerView: View {
             context.beginPage()
             let title = "VisionBend - Multi-Bend Marking Sheet"
             title.draw(at: CGPoint(x: 36, y: 38), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 18)])
-            let info = String(format: "Conduit length: %.2f   Minimum mark spacing: %.2f", length, clearance)
+            let info = String(format: "Conduit length: %.2f %@   Minimum mark spacing: %.2f %@", length, unitLabel, clearance, unitLabel)
             info.draw(at: CGPoint(x: 36, y: 76), withAttributes: [.font: UIFont.systemFont(ofSize: 12)])
             let left: CGFloat = 50
             let width: CGFloat = 495
@@ -172,7 +180,7 @@ struct MultiBendPlannerView: View {
                 let line = String(format: "%d. From start: %.2f  |  Angle: %.1f deg  |  %@", index + 1, mark.position, mark.angle, mark.direction)
                 line.draw(at: CGPoint(x: 36, y: 225 + CGFloat(index) * 23), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
             }
-            let caution = "SCHEMATIC ONLY. Confirm exact bender model, radius, take-up and physical marks before bending."
+            let caution = "SCHEMATIC ONLY. Verify bender reference and calibration before field use."
             caution.draw(in: CGRect(x: 36, y: 760, width: 520, height: 55), withAttributes: [.font: UIFont.systemFont(ofSize: 10)])
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("VisionBend-Marks-\(UUID().uuidString).pdf")
