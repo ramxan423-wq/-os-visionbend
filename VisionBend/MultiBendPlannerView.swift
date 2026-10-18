@@ -30,6 +30,7 @@ struct MultiBendPlannerView: View {
     @State private var preset = "Custom"
     @State private var presetRise = "150"
     @State private var presetAngle = "30"
+    @State private var presetRun = "300"
     @AppStorage("visionbend.units") private var selectedUnits = 0
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
@@ -51,10 +52,11 @@ struct MultiBendPlannerView: View {
             }
             Section("Shape") {
                 Picker("Shape", selection: $preset) {
-                    ForEach(["Custom", "Offset", "90° Stub"], id: \.self) { Text($0) }
+                    ForEach(["Custom", "Offset", "90° Stub", "3-Point Saddle", "4-Point Saddle", "Kick", "Rolling Offset", "Back-to-Back 90°", "Compound 90°", "Segmented Arc"], id: \.self) { Text($0) }
                 }
                 TextField("Rise / desired stub", text: $presetRise).keyboardType(.decimalPad)
                 TextField("Angle", text: $presetAngle).keyboardType(.decimalPad)
+                TextField("Run / clearance", text: $presetRun).keyboardType(.decimalPad)
                 Button("Generate Marks") { generatePreset() }
                 Text("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -128,25 +130,59 @@ struct MultiBendPlannerView: View {
     }
 
     private func generatePreset() {
-        guard let rise = Double(presetRise.replacingOccurrences(of: ",", with: ".")),
-              let angle = Double(presetAngle.replacingOccurrences(of: ",", with: ".")),
-              rise > 0, angle > 0, angle < 90 else { message = "Invalid shape dimensions."; return }
-        if preset == "90° Stub" {
-            desiredStub = presetRise
-            message = "Enter exact bender calibration and select Add Calibrated Stub Mark."
+        func number(_ value: String) -> Double? { Double(value.replacingOccurrences(of: ",", with: ".")) }
+        guard let rise = number(presetRise), let angle = number(presetAngle), let run = number(presetRun),
+              rise.isFinite, angle.isFinite, run.isFinite,
+              rise > 0, angle > 0, angle <= 90, run > 0, length > 0 else {
+            message = "Enter valid positive dimensions and angle up to 90 degrees."
             return
         }
-        guard preset == "Offset" else { message = "Add custom marks below."; return }
-        let first = length * 0.15
-        let second = first + rise / sin(angle * .pi / 180)
-        let proposed = [BendMark(position: first, angle: angle, direction: "Up"),
-                        BendMark(position: second, angle: angle, direction: "Down")]
-        guard FieldBendGeometry.isFeasible(markPositions: proposed.map { $0.position }, conduitLength: length, minStraight: clearance) else {
-            message = "Offset marks do not fit the selected conduit length."; return
+        if preset == "90° Stub" {
+            desiredStub = presetRise
+            message = "Use verified bender take-up and Add Calibrated Stub Mark."
+            return
+        }
+        let first = length * 0.1
+        let spacing = rise / sin(angle * .pi / 180)
+        var steps: [(Double, Double, String)] = []
+        switch preset {
+        case "Offset":
+            steps = [(first, angle, "Up"), (first + spacing, angle, "Down")]
+        case "3-Point Saddle":
+            guard angle <= 45 else { message = "Outer saddle angle must be at most 45 degrees."; return }
+            let middle = length / 2
+            steps = [(middle - spacing, angle, "Up"), (middle, 2 * angle, "Down"), (middle + spacing, angle, "Up")]
+        case "4-Point Saddle":
+            let third = first + spacing + run
+            steps = [(first, angle, "Up"), (first + spacing, angle, "Down"), (third, angle, "Down"), (third + spacing, angle, "Up")]
+        case "Kick":
+            steps = [(first, angle, "Up")]
+        case "Rolling Offset":
+            let trueRise = hypot(rise, run)
+            steps = [(first, angle, "Up"), (first + trueRise / sin(angle * .pi / 180), angle, "Down")]
+        case "Back-to-Back 90°":
+            steps = [(first, 90, "Up"), (first + run, 90, "Down")]
+        case "Segmented Arc":
+            let n = 5
+            steps = (0..<n).map { (first + Double($0) * run / Double(n - 1), angle / Double(n), "Up") }
+        case "Compound 90°":
+            message = "Compound 90 needs exact bender calibration and verified physical mark geometry; enter custom marks."
+            return
+        default:
+            message = "Choose a preset or add custom marks."
+            return
+        }
+        let proposed = steps.map { BendMark(position: $0.0, angle: $0.1, direction: $0.2) }
+        guard FieldBendGeometry.isFeasible(markPositions: proposed.map { $0.position },
+                                          conduitLength: length, minStraight: clearance) else {
+            message = "Marks exceed conduit length or violate minimum spacing."
+            return
         }
         marks = proposed
         pdfURL = nil
-        message = "Theoretical offset marks generated. Verify take-up and bend orientation."
+        message = preset == "Rolling Offset"
+            ? String(format: "Roll orientation %.1f degrees. Verify orientation and bender calibration.", atan2(run, rise) * 180 / .pi)
+            : "Theoretical marks ready. Confirm reference marks, bend direction, radius and springback."
     }
 
     private func addMark() {
