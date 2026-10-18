@@ -33,9 +33,17 @@ jobs:
           xcrun simctl list devices available
           DEVICE_ID=$(xcrun simctl list devices available | grep -E 'iPhone .*\\(' | head -1 | sed -E 's/.*\\(([0-9A-F-]{36})\\).*/\\1/')
           if [ -z "$DEVICE_ID" ]; then echo 'No iPhone simulator available'; exit 1; fi
-          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" CODE_SIGNING_ALLOWED=NO test
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" CODE_SIGNING_ALLOWED=NO -resultBundlePath TestResults.xcresult test
       - name: Check project structure
         run: |
           test -f VisionBend/ContentView.swift
           test -f VisionBend/BendCalculations.swift
           test -f VisionBendTests/BendCalculationsTests.swift
+
+      - name: Upload Xcode test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VisionBend-iOS-test-results
+          path: TestResults.xcresult
+          if-no-files-found: ignore
