@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var history = BendHistory()
+    @AppStorage("visionbend.appearance") private var appearance = 0
+    @AppStorage("visionbend.units") private var units = 0
+    @State private var showHistory = false
+    @State private var showSettings = false
     @State private var showCamera = false
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
@@ -17,6 +22,14 @@ struct ContentView: View {
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .foregroundStyle(accent)
                     Text("Conduit Bending Calculator").foregroundStyle(.secondary)
+                    HStack {
+                        Button("Saved Bends") { showHistory = true }
+                        Spacer()
+                        Button("Settings") { showSettings = true }
+                    }
+                    .tint(accent)
+                    Text("Units: " + (units == 0 ? "mm" : units == 1 ? "cm" : "in"))
+                        .font(.caption).foregroundStyle(.secondary)
                     Button { showCamera = true } label: {
                         Label("Camera Level", systemImage: "camera.viewfinder")
                             .frame(maxWidth: .infinity)
@@ -43,6 +56,13 @@ struct ContentView: View {
                         .tint(accent)
                     if !errorMessage.isEmpty { Text(errorMessage).foregroundStyle(.red) }
                     if !output.isEmpty {
+                        Button("Save Calculation") {
+                            guard let first = Double(height.replacingOccurrences(of: ",", with: ".")),
+                                  let second = Double(angle.replacingOccurrences(of: ",", with: ".")) else { return }
+                            let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset"]
+                            history.add(mode: names[mode], first: first, second: second, result: output)
+                        }
+                        .tint(accent)
                         Text(output)
                             .font(.title3.monospacedDigit())
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,8 +73,11 @@ struct ContentView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }.padding()
             }
-            .background(Color.black)
+            .background(Color(uiColor: .systemBackground))
             .navigationTitle("VisionBend")
+            .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
+            .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
+            .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showCamera) {
                 NavigationStack {
                     CameraLevelView()
