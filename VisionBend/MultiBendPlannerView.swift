@@ -27,6 +27,9 @@ struct MultiBendPlannerView: View {
     @State private var manualSource = ""
     @State private var desiredStub = ""
     @State private var pdfURL: URL?
+    @State private var preset = "Custom"
+    @State private var presetRise = "150"
+    @State private var presetAngle = "30"
     @AppStorage("visionbend.units") private var selectedUnits = 0
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
@@ -45,6 +48,16 @@ struct MultiBendPlannerView: View {
             Section("Conduit (all values in " + unitLabel + ")") {
                 TextField("Conduit length", text: $conduitLength).keyboardType(.decimalPad)
                 TextField("Minimum straight between marks", text: $minStraight).keyboardType(.decimalPad)
+            }
+            Section("Shape") {
+                Picker("Shape", selection: $preset) {
+                    ForEach(["Custom", "Offset", "90° Stub"], id: \.self) { Text($0) }
+                }
+                TextField("Rise / desired stub", text: $presetRise).keyboardType(.decimalPad)
+                TextField("Angle", text: $presetAngle).keyboardType(.decimalPad)
+                Button("Generate Marks") { generatePreset() }
+                Text("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Add bend") {
                 TextField("Mark position from start", text: $markPosition).keyboardType(.decimalPad)
@@ -112,6 +125,28 @@ struct MultiBendPlannerView: View {
         }
         .navigationTitle("Multi-Bend Planner")
         .toolbar { EditButton() }
+    }
+
+    private func generatePreset() {
+        guard let rise = Double(presetRise.replacingOccurrences(of: ",", with: ".")),
+              let angle = Double(presetAngle.replacingOccurrences(of: ",", with: ".")),
+              rise > 0, angle > 0, angle < 90 else { message = "Invalid shape dimensions."; return }
+        if preset == "90° Stub" {
+            desiredStub = presetRise
+            message = "Enter exact bender calibration and select Add Calibrated Stub Mark."
+            return
+        }
+        guard preset == "Offset" else { message = "Add custom marks below."; return }
+        let first = length * 0.15
+        let second = first + rise / sin(angle * .pi / 180)
+        let proposed = [BendMark(position: first, angle: angle, direction: "Up"),
+                        BendMark(position: second, angle: angle, direction: "Down")]
+        guard FieldBendGeometry.isFeasible(markPositions: proposed.map { $0.position }, conduitLength: length, minStraight: clearance) else {
+            message = "Offset marks do not fit the selected conduit length."; return
+        }
+        marks = proposed
+        pdfURL = nil
+        message = "Theoretical offset marks generated. Verify take-up and bend orientation."
     }
 
     private func addMark() {
