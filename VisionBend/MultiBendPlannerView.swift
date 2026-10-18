@@ -82,7 +82,20 @@ struct MultiBendPlannerView: View {
                     if preset == "4-Point Saddle" {
                         TextField("Straight section length", text: $saddleStraight).keyboardType(.decimalPad)
                     }
-                    Text("Use values from exact Greenlee shoe, size, angle and obstruction-height table.").font(.caption)
+                    Button("Load Exact Greenlee Table Values") {
+                        let conversion = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
+                        guard let height = Double(presetRise.replacingOccurrences(of: ",", with: ".")),
+                              let bendAngle = Double(presetAngle.replacingOccurrences(of: ",", with: ".")),
+                              let row = GreenleeSaddleTable.exact(modelID: verifiedModelID, angle: bendAngle, heightInches: height / conversion) else {
+                            message = "No exact published table cell installed for this model, angle and height. Enter verified Z/L1/L2 manually."
+                            return
+                        }
+                        saddleZ = String(format: "%.4f", row.z * conversion)
+                        saddleL1 = String(format: "%.4f", row.l1 * conversion)
+                        saddleL2 = String(format: "%.4f", row.l2 * conversion)
+                        message = "Exact Greenlee manufacturer table cell loaded."
+                    }
+                    Text("Only exact installed table cells auto-load. No interpolation.").font(.caption)
                 }
                 Button("Generate Marks") { generatePreset() }
                 Text("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below.")
