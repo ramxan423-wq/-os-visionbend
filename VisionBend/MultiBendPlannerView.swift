@@ -34,6 +34,7 @@ struct MultiBendPlannerView: View {
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
     @State private var showARMarks = false
+    @State private var guideStep = 0
     @AppStorage("visionbend.units") private var selectedUnits = 0
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
@@ -121,6 +122,24 @@ struct MultiBendPlannerView: View {
                     .disabled(!valid || marks.isEmpty)
                 Text("Tap conduit start and end in AR; verify marker locations manually.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Step-by-step bend assistant") {
+                let steps = sorted
+                if steps.isEmpty {
+                    Text("Generate or add bend marks to begin.")
+                } else {
+                    Text("Step \(min(guideStep + 1, steps.count)) of \(steps.count)")
+                        .font(.headline)
+                    let mark = steps[min(guideStep, steps.count - 1)]
+                    Text(String(format: "Measure %.2f %@ from the starting end. Mark the conduit. Align the verified bender reference. Bend %.1f degrees %@.", mark.position, unitLabel, mark.angle, mark.direction))
+                    Text("Confirm bender radius, reference marks and springback before bending.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button("Previous") { guideStep = max(0, guideStep - 1) }.disabled(guideStep == 0)
+                        Spacer()
+                        Button("Next") { guideStep = min(steps.count - 1, guideStep + 1) }.disabled(guideStep >= steps.count - 1)
+                    }
+                }
             }
             Section("Apple Watch") {
                 Button("Send Marks to Watch") { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
