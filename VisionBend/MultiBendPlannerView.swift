@@ -32,6 +32,7 @@ struct MultiBendPlannerView: View {
     @State private var presetRise = "150"
     @State private var presetAngle = "30"
     @State private var presetRun = "300"
+    @State private var obstructionDistance = ""
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
     @State private var showARMarks = false
@@ -66,6 +67,9 @@ struct MultiBendPlannerView: View {
                 TextField("Rise / desired stub", text: $presetRise).keyboardType(.decimalPad)
                 TextField("Angle", text: $presetAngle).keyboardType(.decimalPad)
                 TextField("Run / clearance", text: $presetRun).keyboardType(.decimalPad)
+                if preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") {
+                    TextField("Distance to obstruction", text: $obstructionDistance).keyboardType(.decimalPad)
+                }
                 Button("Generate Marks") { generatePreset() }
                 Text("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -225,7 +229,23 @@ struct MultiBendPlannerView: View {
         var steps: [(Double, Double, String)] = []
         switch preset {
         case "Offset":
-            steps = [(first, angle, "Up"), (first + spacing, angle, "Down")]
+            if verifiedModelID.hasPrefix("greenlee-555") {
+                let sizes = ["1/2 in", "3/4 in", "1 in", "1-1/4 in", "1-1/2 in", "2 in"]
+                let xs = [3.0625, 3.0625, 3.1875, 4, 4.25, 4.5]
+                let multipliers: [(Double, Double)] = [(10, 5.8), (15, 3.9), (22.5, 2.6), (30, 2), (45, 1.4)]
+                guard let index = sizes.firstIndex(of: tradeSize),
+                      let factor = multipliers.first(where: { abs($0.0 - angle) < 0.001 })?.1,
+                      let distance = number(obstructionDistance), distance.isFinite else {
+                    message = "Greenlee offset requires obstruction distance and 10, 15, 22.5, 30 or 45 degrees."
+                    return
+                }
+                let conversion = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
+                let firstMark = distance - xs[index] * conversion
+                guard firstMark >= 0 else { message = "Obstruction too close for X dimension."; return }
+                steps = [(firstMark, angle, "Up"), (firstMark + rise * factor, angle, "Down")]
+            } else {
+                steps = [(first, angle, "Up"), (first + spacing, angle, "Down")]
+            }
         case "3-Point Saddle":
             guard angle <= 45 else { message = "Outer saddle angle must be at most 45 degrees."; return }
             let middle = length / 2
@@ -258,7 +278,7 @@ struct MultiBendPlannerView: View {
         }
         marks = proposed
         pdfURL = nil
-        message = preset == "Compound 90°" ? "Theoretical 90 + 90 bend stations generated. NOT bender arrow marks; confirm model-specific references and test bend." : preset == "Rolling Offset"
+        message = preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") ? "Greenlee 555 X-table marks: align each mark with front hook edge, rotate conduit 180 degrees for second bend. Approximate multiplier; verify minimum offset and springback." : preset == "Compound 90°" ? "Theoretical 90 + 90 bend stations generated. NOT bender arrow marks; confirm model-specific references and test bend." : preset == "Rolling Offset"
             ? String(format: "Roll orientation %.1f degrees. Verify orientation and bender calibration.", atan2(run, rise) * 180 / .pi)
             : "Theoretical marks ready. Confirm reference marks, bend direction, radius and springback."
     }
