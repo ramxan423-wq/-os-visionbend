@@ -40,7 +40,8 @@ final class WatchPlanStore: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {
-        if let context = try? session.receivedApplicationContext, !context.isEmpty {
+        let context = session.receivedApplicationContext
+        if !context.isEmpty {
             DispatchQueue.main.async {
                 UserDefaults.standard.set(context, forKey: "lastWatchPlan")
                 self.apply(context)
