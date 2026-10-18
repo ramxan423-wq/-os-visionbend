@@ -6,6 +6,7 @@ on:
     paths:
       - 'VisionBend/**'
       - 'VisionBendTests/**'
+      - 'VisionBendWatch/**'
       - 'project.yml'
       - '.github/workflows/visionbend-ios.yml'
 
@@ -27,6 +28,9 @@ jobs:
         working-directory: .
         run: |
           xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Build watchOS simulator app (unsigned)
+        run: |
+          xcodebuild -project VisionBend.xcodeproj -target VisionBendWatch -configuration Debug -sdk watchsimulator -destination 'generic/platform=watchOS Simulator' CODE_SIGNING_ALLOWED=NO build
       - name: Run iOS unit tests
         working-directory: .
         run: |
