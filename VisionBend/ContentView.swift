@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showCamera = false
     @State private var showConduitScan = false
+    @State private var showDepthScan = false
     @State private var showAR = false
     @State private var showPremium = false
     @State private var showReference = false
@@ -43,6 +44,7 @@ struct ContentView: View {
                     .buttonStyle(.bordered)
                     .tint(accent)
                     Button("Conduit Photo Scan") { showConduitScan = true }
+                    Button("Depth-Assisted Scan (LiDAR)") { showDepthScan = true }
                         .buttonStyle(.bordered)
                     HStack {
                         Button("AR Measure") { showAR = true }
@@ -119,6 +121,7 @@ struct ContentView: View {
             .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
             .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(isPresented: $showDepthScan) { NavigationStack { DepthConduitScanView() } }
             .sheet(isPresented: $showConduitScan) { NavigationStack { ConduitScanView() } }
             .sheet(isPresented: $showCamera) {
                 NavigationStack {
