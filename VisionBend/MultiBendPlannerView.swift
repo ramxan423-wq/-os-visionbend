@@ -16,6 +16,16 @@ struct MultiBendPlannerView: View {
     @State private var direction = "Up"
     @State private var marks: [BendMark] = []
     @State private var message = ""
+    @StateObject private var watchSync = PhoneWatchSync.shared
+    @State private var manufacturer = ""
+    @State private var benderModel = ""
+    @State private var conduitType = "EMT"
+    @State private var tradeSize = ""
+    @State private var referenceMark = "Arrow"
+    @State private var takeUp = ""
+    @State private var correction = "0"
+    @State private var manualSource = ""
+    @State private var desiredStub = ""
     @State private var pdfURL: URL?
     private let directions = ["Up", "Down", "Left", "Right"]
 
@@ -43,6 +53,20 @@ struct MultiBendPlannerView: View {
                 Button("Add Mark") { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
             }
+            Section("Model-calibrated 90° stub mark") {
+                TextField("Manufacturer", text: $manufacturer)
+                TextField("Exact bender model", text: $benderModel)
+                TextField("Conduit type", text: $conduitType)
+                TextField("Conduit trade size", text: $tradeSize)
+                TextField("Reference mark from manual", text: $referenceMark)
+                TextField("Verified take-up", text: $takeUp).keyboardType(.decimalPad)
+                TextField("Field correction", text: $correction).keyboardType(.decimalPad)
+                TextField("Manual source", text: $manualSource)
+                TextField("Desired stub length", text: $desiredStub).keyboardType(.decimalPad)
+                Button("Add Calibrated Stub Mark") { addCalibratedMark() }
+                Text("Use only exact-model values confirmed in the manufacturer manual. Reference marks differ between benders.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("2D marking diagram (schematic)") {
                 BendMarkDiagram(marks: sorted, conduitLength: length)
                     .frame(height: 145)
@@ -63,6 +87,11 @@ struct MultiBendPlannerView: View {
                 }
                 Text(valid ? "Mark spacing passes the entered minimum." : "Invalid layout: check lengths, angles and minimum straight spacing.")
                     .foregroundStyle(valid ? .green : .red)
+            }
+            Section("Apple Watch") {
+                Button("Send Marks to Watch") { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: "selected units") }
+                    .disabled(marks.isEmpty || !valid)
+                Text(watchSync.status).font(.caption)
             }
             Section("Export") {
                 Button("Create PDF marking sheet") { makePDF() }.disabled(!valid || marks.isEmpty)
@@ -94,6 +123,23 @@ struct MultiBendPlannerView: View {
         marks.append(BendMark(position: position, angle: angle, direction: direction))
         pdfURL = nil
         message = ""
+    }
+
+    private func addCalibratedMark() {
+        guard !manufacturer.isEmpty, !benderModel.isEmpty, !tradeSize.isEmpty, !manualSource.isEmpty,
+              let take = Double(takeUp), let offset = Double(correction), let desired = Double(desiredStub) else {
+            message = "Enter exact bender details, documented take-up and stub length."
+            return
+        }
+        let calibration = BenderCalibration(manufacturer: manufacturer, model: benderModel, conduit: conduitType, tradeSize: tradeSize, referenceMark: referenceMark, takeUp: take, fieldCorrection: offset, source: manualSource)
+        guard let position = calibration.stubPosition(for: desired),
+              FieldBendGeometry.isFeasible(markPositions: marks.map(\.position) + [position], conduitLength: length, minStraight: clearance) else {
+            message = "Calibrated mark is invalid or conflicts with existing marks."
+            return
+        }
+        marks.append(BendMark(position: position, angle: 90, direction: direction))
+        pdfURL = nil
+        message = "Stub mark added using your manual-supplied calibration."
     }
 
     private func makePDF() {
