@@ -37,6 +37,7 @@ struct MultiBendPlannerView: View {
     @State private var saddleZ = ""
     @State private var saddleL1 = ""
     @State private var saddleL2 = ""
+    @State private var saddleStraight = ""
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
     @State private var showARMarks = false
@@ -77,8 +78,9 @@ struct MultiBendPlannerView: View {
                 if (preset == "3-Point Saddle" || preset == "4-Point Saddle") && verifiedModelID.hasPrefix("greenlee-555") {
                     TextField("Manufacturer table Z", text: $saddleZ).keyboardType(.decimalPad)
                     TextField("Manufacturer table L1", text: $saddleL1).keyboardType(.decimalPad)
+                    TextField("Manufacturer table L2", text: $saddleL2).keyboardType(.decimalPad)
                     if preset == "4-Point Saddle" {
-                        TextField("Manufacturer table L2", text: $saddleL2).keyboardType(.decimalPad)
+                        TextField("Straight section length", text: $saddleStraight).keyboardType(.decimalPad)
                     }
                     Text("Use values from exact Greenlee shoe, size, angle and obstruction-height table.").font(.caption)
                 }
@@ -274,11 +276,11 @@ struct MultiBendPlannerView: View {
             }
         case "3-Point Saddle":
             if verifiedModelID.hasPrefix("greenlee-555") {
-                guard let z = number(saddleZ), let l1 = number(saddleL1), z.isFinite, l1.isFinite, z >= 0, l1 > 0 else {
-                    message = "Enter Greenlee saddle table Z and L1."; return
+                guard let z = number(saddleZ), let l1 = number(saddleL1), let l2 = number(saddleL2), z.isFinite, l1.isFinite, l2.isFinite, z >= 0, l1 > 0, l2 > 0 else {
+                    message = "Enter Greenlee saddle table Z, L1 and L2."; return
                 }
-                let middle = run - z
-                steps = [(middle - l1, angle, "Up"), (middle, 2 * angle, "Down"), (middle + l1, angle, "Up")]
+                let firstMark = run - z
+                steps = [(firstMark, angle, "Up"), (firstMark + l1, 2 * angle, "Down"), (firstMark + l1 + l2, angle, "Up")]
                 break
             }
             guard angle <= 45 else { message = "Outer saddle angle must be at most 45 degrees."; return }
@@ -289,8 +291,9 @@ struct MultiBendPlannerView: View {
                 guard let z = number(saddleZ), let l1 = number(saddleL1), let l2 = number(saddleL2), z.isFinite, l1.isFinite, l2.isFinite, z >= 0, l1 > 0, l2 > 0 else {
                     message = "Enter Greenlee saddle table Z, L1 and L2."; return
                 }
+                guard let straight = number(saddleStraight), straight.isFinite, straight >= 0 else { message = "Enter saddle straight-section length."; return }
                 let start = run - z
-                let thirdMark = start + l2 + rise
+                let thirdMark = start + l2 + straight
                 steps = [(start, angle, "Up"), (start + l1, angle, "Down"), (thirdMark, angle, "Down"), (thirdMark + l1, angle, "Up")]
                 break
             }
