@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var showAR = false
     @State private var showPremium = false
     @State private var showReference = false
+    @State private var showMultiBend = false
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
     @AppStorage("visionbend.lastAngle") private var angle = "30"
@@ -46,6 +47,9 @@ struct ContentView: View {
                         Button("Bender Reference") { showReference = true }
                         Button("Premium") { showPremium = true }
                     }.tint(accent)
+                    Button("Multi-Bend Planner · 2D · PDF") { showMultiBend = true }
+                        .buttonStyle(.bordered)
+                        .tint(accent)
                     Picker("Mode", selection: $mode) {
                         Text("Offset").tag(0)
                         Text("3-Point Saddle").tag(1)
@@ -106,6 +110,7 @@ struct ContentView: View {
             }
             .navigationTitle("VisionBend")
             .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
+            .sheet(isPresented: $showMultiBend) { NavigationStack { MultiBendPlannerView() } }
             .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
             .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
             .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
