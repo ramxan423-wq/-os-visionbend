@@ -96,6 +96,9 @@ struct DepthConduitScanView: View {
     @StateObject private var scanner = DepthConduitScanner()
     var body: some View {
         VStack(spacing: 16) {
+            DepthCameraPreview(session: scanner.session)
+                .frame(height: 310)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             Text("Depth-assisted conduit width").font(.headline)
             if let diameter = scanner.diameterMM {
                 Text(String(format: "~ %.1f mm", diameter)).font(.largeTitle.monospacedDigit())
@@ -110,4 +113,16 @@ struct DepthConduitScanView: View {
         .onAppear { scanner.start() }
         .onDisappear { scanner.stop() }
     }
+}
+
+
+private struct DepthCameraPreview: UIViewRepresentable {
+    let session: ARSession
+    func makeUIView(context: Context) -> ARSCNView {
+        let view = ARSCNView(frame: .zero)
+        view.session = session
+        view.automaticallyUpdatesLighting = false
+        return view
+    }
+    func updateUIView(_ uiView: ARSCNView, context: Context) {}
 }
