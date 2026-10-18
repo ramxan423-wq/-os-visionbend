@@ -29,6 +29,20 @@ struct BenderReferenceView: View {
 
     var body: some View {
         Form {
+            Section("Manufacturer-verified starter catalog") {
+                ForEach(VerifiedBenderCatalog.entries) { item in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.brand + " " + item.model).font(.headline)
+                        Text(item.conduit + " " + item.tradeSize)
+                        if let deduct = item.deductInches { Text(String(format: "90° deduct: %.3f in", deduct)) }
+                        if let radius = item.radiusInches { Text(String(format: "Centerline radius: %.3f in", radius)) }
+                        Text(item.notes).font(.caption)
+                        if let url = URL(string: item.sourceURL) { Link("Official manufacturer source", destination: url) }
+                    }
+                }
+                Text("Only the listed model and size combinations are verified. Other models require exact manufacturer documentation.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Bender and conduit") {
                 Picker("Manufacturer", selection: $manufacturer) {
                     ForEach(brands, id: \.self) { Text($0) }
