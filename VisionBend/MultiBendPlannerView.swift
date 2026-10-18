@@ -33,6 +33,7 @@ struct MultiBendPlannerView: View {
     @State private var presetRun = "300"
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
+    @State private var showARMarks = false
     @AppStorage("visionbend.units") private var selectedUnits = 0
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
@@ -115,6 +116,12 @@ struct MultiBendPlannerView: View {
                 Text(valid ? "Mark spacing passes the entered minimum." : "Invalid layout: check lengths, angles and minimum straight spacing.")
                     .foregroundStyle(valid ? .green : .red)
             }
+            Section("Camera marking (experimental)") {
+                Button("Show Marks on Camera") { showARMarks = true }
+                    .disabled(!valid || marks.isEmpty)
+                Text("Tap conduit start and end in AR; verify marker locations manually.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Apple Watch") {
                 Button("Send Marks to Watch") { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
                     .disabled(marks.isEmpty || !valid)
@@ -133,6 +140,12 @@ struct MultiBendPlannerView: View {
         }
         .navigationTitle("Multi-Bend Planner")
         .toolbar { EditButton() }
+        .sheet(isPresented: $showARMarks) {
+            NavigationStack {
+                ARBendMarkView(marks: sorted, conduitLength: length,
+                               unitToMeters: selectedUnits == 0 ? 0.001 : selectedUnits == 1 ? 0.01 : 0.0254)
+            }
+        }
     }
 
     private func generatePreset() {
