@@ -11,6 +11,7 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
     private var busy = false
     private var lastProcessed = Date.distantPast
     private var measurements: [Double] = []
+    private var consecutiveMisses = 0
 
     func start() {
         guard ARWorldTrackingConfiguration.isSupported else {
@@ -68,7 +69,12 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
                             if z.isFinite && z > 0.1 && z < 4 && focalX > 0 {
                                 // Rough projected width only; contour may be shadow or edge.
                                 if let pair = edgePair, pair.confidence >= 0.35 {
-                                    estimated = pair.separationNormalized * imageWidth * Double(z) / focalX * 1000
+                                    let horizontal = abs(pair.first.x - pair.second.x) < abs(pair.first.y - pair.second.y)
+                                    let imageHeight = Double(CVPixelBufferGetHeight(image))
+                                    let focalY = Double(camera.intrinsics.columns.1.y)
+                                    let spanPixels = pair.separationNormalized * (horizontal ? imageWidth : imageHeight)
+                                    let focalPixels = horizontal ? focalX : focalY
+                                    if focalPixels > 0 { estimated = spanPixels * Double(z) / focalPixels * 1000 }
                                 }
                             }
                         }
@@ -77,13 +83,23 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
                 }
                 DispatchQueue.main.async {
                     if let estimated, estimated > 3, estimated < 200 {
+                        self.consecutiveMisses = 0
+                        if let previous = self.measurements.last, abs(estimated - previous) / previous > 0.20 {
+                            self.measurements.removeAll()
+                        }
                         self.measurements.append(estimated)
                         if self.measurements.count > 7 { self.measurements.removeFirst() }
                         self.sampleCount = self.measurements.count
                         let ordered = self.measurements.sorted()
-                        self.diameterMM = ordered[ordered.count / 2]
-                        self.message = "Experimental depth-based width. Verify using calipers."
+                        self.diameterMM = ordered.count >= 5 ? ordered[ordered.count / 2] : nil
+                        self.message = ordered.count >= 5 ? "Provisional depth width from 5+ frames; verify with calipers." : "Collecting consistent frames before displaying a result."
                     } else {
+                        self.consecutiveMisses += 1
+                        if self.consecutiveMisses >= 2 {
+                            self.measurements.removeAll()
+                            self.diameterMM = nil
+                            self.sampleCount = 0
+                        }
                         self.message = "No unambiguous paired edges with usable depth. Reposition camera; do not trust a guessed diameter."
                     }
                     self.busy = false
