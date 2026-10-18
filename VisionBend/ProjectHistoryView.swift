@@ -47,8 +47,13 @@ struct ProjectHistoryView: View {
         NavigationStack {
             List {
                 if history.items.isEmpty {
-                    ContentUnavailableView("No Saved Bends", systemImage: "tray",
-                                           description: Text("Save a calculation to see it here."))
+                    VStack(spacing: 8) {
+                        Image(systemName: "tray").font(.title2)
+                        Text("No Saved Bends").font(.headline)
+                        Text("Save a calculation to see it here.").font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .foregroundStyle(.secondary)
                 }
                 ForEach(history.items) { bend in
                     VStack(alignment: .leading, spacing: 5) {
