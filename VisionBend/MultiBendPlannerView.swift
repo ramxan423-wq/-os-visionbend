@@ -31,6 +31,8 @@ struct MultiBendPlannerView: View {
     @State private var presetRise = "150"
     @State private var presetAngle = "30"
     @State private var presetRun = "300"
+    @State private var centerlineRadius = ""
+    @State private var outsideDiameter = ""
     @AppStorage("visionbend.units") private var selectedUnits = 0
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
@@ -49,6 +51,10 @@ struct MultiBendPlannerView: View {
             Section("Conduit (all values in " + unitLabel + ")") {
                 TextField("Conduit length", text: $conduitLength).keyboardType(.decimalPad)
                 TextField("Minimum straight between marks", text: $minStraight).keyboardType(.decimalPad)
+            }
+            Section("Bender geometry") {
+                TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
+                TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
             }
             Section("Shape") {
                 Picker("Shape", selection: $preset) {
@@ -91,7 +97,7 @@ struct MultiBendPlannerView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("3D preview") {
-                BendShapePreview(marks: sorted, length: length).frame(height: 280)
+                BendShapePreview(marks: sorted, length: length, centerlineRadius: Double(centerlineRadius) ?? 0, conduitOutsideDiameter: Double(outsideDiameter) ?? 0).frame(height: 280)
                 Text("Theoretical shape only. Confirm bend radius and equipment calibration.")
             }
             Section("Bend sequence") {
