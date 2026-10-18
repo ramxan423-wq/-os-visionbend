@@ -47,7 +47,6 @@ private struct ARBendMarkCamera: UIViewRepresentable {
     }
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.redraw()
     }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
         view.session.pause()
