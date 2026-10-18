@@ -8,6 +8,9 @@ struct CameraLevelView: View {
     @State private var pitch = 0.0
     @State private var roll = 0.0
     @State private var motionAvailable = true
+    @State private var pitchZero = 0.0
+    @State private var rollZero = 0.0
+    @State private var calibrated = false
     private let motion = CMMotionManager()
 
     var body: some View {
@@ -32,8 +35,24 @@ struct CameraLevelView: View {
                 Spacer()
                 VStack(spacing: 8) {
                     Text("CAMERA LEVEL").font(.headline)
-                    Text(String(format: "Pitch: %.1f°  Roll: %.1f°", pitch, roll))
+                    Text(String(format: "Pitch: %.1f°  Roll: %.1f°", pitch - pitchZero, roll - rollZero))
                         .font(.title3.monospacedDigit())
+                    HStack(spacing: 14) {
+                        Button("Set Zero") {
+                            pitchZero = pitch
+                            rollZero = roll
+                            calibrated = true
+                        }
+                        Button("Reset") {
+                            pitchZero = 0
+                            rollZero = 0
+                            calibrated = false
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!motionAvailable)
+                    Text(calibrated ? "Relative level (zeroed)" : "Device-relative level")
+                        .font(.caption)
                     if !motionAvailable { Text("Motion sensor unavailable").font(.caption) }
                     Text("For reference only; calibrate with a physical level.")
                         .font(.caption)
