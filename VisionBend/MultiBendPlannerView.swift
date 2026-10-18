@@ -90,7 +90,7 @@ struct MultiBendPlannerView: View {
                 if let item = VerifiedBenderCatalog.entries.first(where: { $0.id == verifiedModelID }) {
                     Text("Official profile: \(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)")
                     if let url = URL(string: item.sourceURL) { Link("Manufacturer source", destination: url) }
-                    Text("Only the exact model, conduit and size are covered. No Greenlee 555 data is included until its model-specific shoe and conduit tables are verified.")
+                    Text("Only the exact model, conduit and size are covered. Greenlee 555 entries apply only to the listed 28008 rigid shoe and size. Other shoes require separate tables.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -193,7 +193,7 @@ struct MultiBendPlannerView: View {
         benderModel = item.model
         conduitType = item.conduit
         tradeSize = item.tradeSize
-        referenceMark = "Arrow"
+        referenceMark = item.id.hasPrefix("greenlee-555") ? "Hook Front" : "Arrow"
         if let deduct = item.deductInches { takeUp = String(format: "%.4f", deduct * factor) }
         if let radius = item.radiusInches { centerlineRadius = String(format: "%.4f", radius * factor) }
         correction = "0"
@@ -279,12 +279,15 @@ struct MultiBendPlannerView: View {
               !benderModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !tradeSize.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !manualSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              referenceMark.lowercased() == "arrow",
+              ["arrow", "hook front"].contains(referenceMark.lowercased()),
               let take = Double(takeUp.replacingOccurrences(of: ",", with: ".")),
               let offset = Double(correction.replacingOccurrences(of: ",", with: ".")),
               let desired = Double(desiredStub.replacingOccurrences(of: ",", with: ".")) else {
-            message = "Enter documented arrow take-up and exact model. Star/other marks need a different formula."
+            message = "Enter documented arrow or hook-front deduct and exact model. Star/other marks need a different formula."
             return
+        }
+        if verifiedModelID.hasPrefix("greenlee-555"), desired < take + (selectedUnits == 0 ? 50.8 : selectedUnits == 1 ? 5.08 : 2) {
+            message = "Greenlee 555 minimum stub is deduct + 2 inches. Increase the desired stub."; return
         }
         let calibration = BenderCalibration(manufacturer: manufacturer, model: benderModel, conduit: conduitType, tradeSize: tradeSize, referenceMark: referenceMark, takeUp: take, fieldCorrection: offset, source: manualSource)
         guard let position = calibration.stubPosition(for: desired),
