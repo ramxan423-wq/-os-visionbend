@@ -100,11 +100,12 @@ private struct CameraPreview: UIViewRepresentable {
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else { return view }
         session.addInput(input)
-        let output = AVCaptureVideoDataOutput()
-        if session.canAddOutput(output) { session.addOutput(output) }
         view.previewLayer.session = session
         context.coordinator.session = session
-        DispatchQueue.global(qos: .userInitiated).async { session.startRunning() }
+        DispatchQueue.global(qos: .userInitiated).async { [weak session] in
+            guard let session = session, !session.isRunning else { return }
+            session.startRunning()
+        }
         return view
     }
 
@@ -114,7 +115,9 @@ private struct CameraPreview: UIViewRepresentable {
 
     static func dismantleUIView(_ uiView: PreviewView, coordinator: Coordinator) {
         let session = coordinator.session
-        DispatchQueue.global(qos: .userInitiated).async { session?.stopRunning() }
+        DispatchQueue.global(qos: .userInitiated).async {
+            if session?.isRunning == true { session?.stopRunning() }
+        }
         uiView.previewLayer.session = nil
     }
 
