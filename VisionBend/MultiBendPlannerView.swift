@@ -38,6 +38,7 @@ struct MultiBendPlannerView: View {
     @State private var saddleL1 = ""
     @State private var saddleL2 = ""
     @State private var saddleStraight = ""
+    @State private var saddleTableKey = ""
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
     @State private var showARMarks = false
@@ -93,6 +94,7 @@ struct MultiBendPlannerView: View {
                         saddleZ = String(format: "%.4f", row.z * conversion)
                         saddleL1 = String(format: "%.4f", row.l1 * conversion)
                         saddleL2 = String(format: "%.4f", row.l2 * conversion)
+                        saddleTableKey = "\(verifiedModelID)|\(bendAngle)|\(row.heightInches)"
                         message = "Exact Greenlee manufacturer table cell loaded."
                     }
                     Text("Only exact installed table cells auto-load. No interpolation.").font(.caption)
@@ -226,6 +228,8 @@ struct MultiBendPlannerView: View {
         guard let item = VerifiedBenderCatalog.entries.first(where: { $0.id == id }) else { return }
         let factor = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
         confirmedIMCHardware = false
+        saddleTableKey = ""
+        saddleZ = ""; saddleL1 = ""; saddleL2 = ""
         manufacturer = item.brand
         benderModel = item.model
         conduitType = item.conduit
@@ -260,6 +264,12 @@ struct MultiBendPlannerView: View {
             message = "Enter valid positive dimensions and angle up to 90 degrees."
             return
         }
+        if (preset == "3-Point Saddle" || preset == "4-Point Saddle") && !saddleTableKey.isEmpty {
+            let expectedKey = "\(verifiedModelID)|\(angle)|\(rise / (selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0))"
+            if saddleTableKey != expectedKey {
+                message = "Angle, height or model changed. Reload exact manufacturer saddle table values."; return
+            }
+        }
         if preset == "90° Stub" {
             desiredStub = presetRise
             message = "Use verified bender take-up and Add Calibrated Stub Mark."
@@ -288,6 +298,7 @@ struct MultiBendPlannerView: View {
                 steps = [(first, angle, "Up"), (first + spacing, angle, "Down")]
             }
         case "3-Point Saddle":
+            guard angle <= 45 else { message = "Three-bend saddle outer angle must be at most 45 degrees; middle bend cannot exceed 90 degrees."; return }
             if verifiedModelID.hasPrefix("greenlee-555") {
                 guard let z = number(saddleZ), let l1 = number(saddleL1), let l2 = number(saddleL2), z.isFinite, l1.isFinite, l2.isFinite, z >= 0, l1 > 0, l2 > 0 else {
                     message = "Enter Greenlee saddle table Z, L1 and L2."; return
