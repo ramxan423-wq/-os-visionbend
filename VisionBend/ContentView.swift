@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showCamera = false
     @State private var mode = 0
     @State private var height = "10"
     @State private var angle = "30"
@@ -16,6 +17,12 @@ struct ContentView: View {
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .foregroundStyle(accent)
                     Text("Conduit Bending Calculator").foregroundStyle(.secondary)
+                    Button { showCamera = true } label: {
+                        Label("Camera Level", systemImage: "camera.viewfinder")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(accent)
                     Picker("Mode", selection: $mode) {
                         Text("Offset").tag(0)
                         Text("3-Point Saddle").tag(1)
@@ -45,6 +52,12 @@ struct ContentView: View {
             }
             .background(Color.black)
             .navigationTitle("VisionBend")
+            .sheet(isPresented: $showCamera) {
+                NavigationStack {
+                    CameraLevelView()
+                        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { showCamera = false } } }
+                }
+            }
         }
     }
 
