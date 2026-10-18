@@ -7,6 +7,8 @@ struct SavedBend: Codable, Identifiable {
     var firstValue: Double
     var secondValue: Double
     var result: String
+    var projectName: String?
+    var notes: String?
 }
 
 @MainActor
@@ -19,6 +21,13 @@ final class BendHistory: ObservableObject {
     func add(mode: String, first: Double, second: Double, result: String) {
         items.insert(SavedBend(id: UUID(), date: Date(), mode: mode,
                                firstValue: first, secondValue: second, result: result), at: 0)
+        save()
+    }
+
+    func update(id: UUID, projectName: String, notes: String) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        items[index].projectName = projectName
+        items[index].notes = notes
         save()
     }
 
@@ -42,6 +51,9 @@ final class BendHistory: ObservableObject {
 
 struct ProjectHistoryView: View {
     @ObservedObject var history: BendHistory
+    @State private var editing: SavedBend?
+    @State private var projectName = ""
+    @State private var notes = ""
 
     var body: some View {
         NavigationStack {
@@ -57,17 +69,42 @@ struct ProjectHistoryView: View {
                 }
                 ForEach(history.items) { bend in
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(bend.mode).font(.headline)
+                        Text(bend.projectName?.isEmpty == false ? bend.projectName! : bend.mode).font(.headline)
+                        Text(bend.mode).font(.caption).foregroundStyle(.secondary)
                         Text(bend.date, style: .date).font(.caption).foregroundStyle(.secondary)
                         Text(bend.result).font(.body.monospacedDigit())
                         Text("Inputs: \(bend.firstValue.formatted()) / \(bend.secondValue.formatted())")
                             .font(.caption).foregroundStyle(.secondary)
+                        if let notes = bend.notes, !notes.isEmpty { Text(notes).font(.caption) }
+                        Button("Edit project details") {
+                            editing = bend
+                            projectName = bend.projectName ?? ""
+                            notes = bend.notes ?? ""
+                        }
                     }.padding(.vertical, 4)
                 }
                 .onDelete(perform: history.remove)
             }
             .navigationTitle("Saved Bends")
             .toolbar { EditButton() }
+            .sheet(item: $editing) { bend in
+                NavigationStack {
+                    Form {
+                        TextField("Project name", text: $projectName)
+                        TextField("Notes", text: $notes, axis: .vertical)
+                    }
+                    .navigationTitle("Edit Project")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { editing = nil } }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                history.update(id: bend.id, projectName: projectName, notes: notes)
+                                editing = nil
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
