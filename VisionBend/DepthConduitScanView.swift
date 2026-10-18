@@ -43,13 +43,14 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
             request.maximumImageDimension = 512
             do {
                 try VNImageRequestHandler(cvPixelBuffer: image, options: [:]).perform([request])
+                let edgePair = try? ConduitEdgeDetector.detect(in: image)
                 let contours = request.results?.first?.topLevelContours ?? []
                 let candidates = contours.compactMap { contour -> CGRect? in
                     let rect = contour.normalizedPath.boundingBox
                     let aspect = max(rect.width, rect.height) / max(0.0001, min(rect.width, rect.height))
                     return aspect > 5 && max(rect.width, rect.height) > 0.25 ? rect : nil
                 }
-                let rect = candidates.max { a, b in a.width * a.height < b.width * b.height }
+                let rect = edgePair == nil ? nil : candidates.max { a, b in a.width * a.height < b.width * b.height }
                 var estimated: Double?
                 if let rect, rect.width > rect.height {
                     let depthWidth = CVPixelBufferGetWidth(depthBuffer)
@@ -66,7 +67,9 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
                             let focalX = Double(camera.intrinsics.columns.0.x)
                             if z.isFinite && z > 0.1 && z < 4 && focalX > 0 {
                                 // Rough projected width only; contour may be shadow or edge.
-                                estimated = Double(rect.height) * imageWidth * Double(z) / focalX * 1000
+                                if let pair = edgePair, pair.confidence >= 0.35 {
+                                    estimated = pair.separationNormalized * imageWidth * Double(z) / focalX * 1000
+                                }
                             }
                         }
                         CVPixelBufferUnlockBaseAddress(depthBuffer, .readOnly)
@@ -81,7 +84,7 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
                         self.diameterMM = ordered[ordered.count / 2]
                         self.message = "Experimental depth-based width. Verify using calipers."
                     } else {
-                        self.message = "No reliable conduit contour and depth pair. Change angle or lighting."
+                        self.message = "No unambiguous paired edges with usable depth. Reposition camera; do not trust a guessed diameter."
                     }
                     self.busy = false
                 }
