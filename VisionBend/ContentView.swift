@@ -2,9 +2,9 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var showCamera = false
-    @State private var mode = 0
-    @State private var height = "10"
-    @State private var angle = "30"
+    @AppStorage("visionbend.mode") private var mode = 0
+    @AppStorage("visionbend.lastHeight") private var height = "10"
+    @AppStorage("visionbend.lastAngle") private var angle = "30"
     @State private var output = ""
     @State private var errorMessage = ""
     private let accent = Color(red: 1, green: 0.45, blue: 0.08)
@@ -26,11 +26,14 @@ struct ContentView: View {
                     Picker("Mode", selection: $mode) {
                         Text("Offset").tag(0)
                         Text("3-Point Saddle").tag(1)
-                    }.pickerStyle(.segmented)
-                    Text("Rise / Height")
-                    TextField("Rise / Height", text: $height)
+                        Text("Kick").tag(2)
+                        Text("Arc").tag(3)
+                        Text("Rolling").tag(4)
+                    }.pickerStyle(.menu)
+                    Text(mode == 3 ? "Centerline Radius" : mode == 4 ? "Horizontal Offset" : "Rise / Height")
+                    TextField("Measurement", text: $height)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                    Text(mode == 0 ? "Bend Angle (degrees)" : "Center Angle (degrees)")
+                    Text(mode == 4 ? "Vertical Offset" : mode == 1 ? "Center Angle (degrees)" : "Bend Angle (degrees)")
                     TextField("Angle", text: $angle)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                     Button("CALCULATE", action: calculate)
@@ -75,9 +78,18 @@ struct ContentView: View {
                 let spacing = try BendCalculations.offsetSpacing(rise: rise, angleDegrees: degrees)
                 let shrink = try BendCalculations.offsetShrink(rise: rise, angleDegrees: degrees)
                 output = String(format: "Mark spacing: %.2f\nTheoretical shrink: %.2f", spacing, shrink)
-            } else {
+            } else if mode == 1 {
                 let distance = try BendCalculations.saddleOuterMarkDistance(height: rise, centerAngleDegrees: degrees)
                 output = String(format: "Center to outer mark: %.2f\nOuter bend angle: %.1f°", distance, degrees / 2)
+            } else if mode == 2 {
+                let travel = try MoreBendCalculations.kickTravel(rise: rise, angleDegrees: degrees)
+                output = String(format: "Kick horizontal travel: %.2f", travel)
+            } else if mode == 3 {
+                let arc = try MoreBendCalculations.arcLength(centerlineRadius: rise, angleDegrees: degrees)
+                output = String(format: "Centerline arc length: %.2f", arc)
+            } else {
+                let roll = try MoreBendCalculations.rollingOffset(horizontal: rise, vertical: degrees)
+                output = String(format: "True rolling offset: %.2f", roll)
             }
         } catch {
             errorMessage = error.localizedDescription
