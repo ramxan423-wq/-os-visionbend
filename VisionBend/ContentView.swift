@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showPremium = false
     @State private var showReference = false
     @State private var showMultiBend = false
+    @State private var showCutPlanner = false
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
     @AppStorage("visionbend.lastAngle") private var angle = "30"
@@ -55,6 +56,8 @@ struct ContentView: View {
                     Button("Multi-Bend Planner · 2D · PDF") { showMultiBend = true }
                         .buttonStyle(.bordered)
                         .tint(accent)
+                    Button("Conduit Cut Optimizer") { showCutPlanner = true }
+                        .buttonStyle(.bordered)
                     Picker("Mode", selection: $mode) {
                         Text("Offset").tag(0)
                         Text("3-Point Saddle").tag(1)
@@ -115,6 +118,7 @@ struct ContentView: View {
             }
             .navigationTitle("VisionBend")
             .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
+            .sheet(isPresented: $showCutPlanner) { NavigationStack { ConduitCutOptimizerView() } }
             .sheet(isPresented: $showMultiBend) { NavigationStack { MultiBendPlannerView() } }
             .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
             .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
