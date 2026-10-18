@@ -52,6 +52,7 @@ final class BendHistory: ObservableObject {
 struct ProjectHistoryView: View {
     @ObservedObject var history: BendHistory
     @State private var editing: SavedBend?
+    @State private var exporting: SavedBend?
     @State private var projectName = ""
     @State private var notes = ""
 
@@ -76,6 +77,7 @@ struct ProjectHistoryView: View {
                         Text("Inputs: \(bend.firstValue.formatted()) / \(bend.secondValue.formatted())")
                             .font(.caption).foregroundStyle(.secondary)
                         if let notes = bend.notes, !notes.isEmpty { Text(notes).font(.caption) }
+                        Button("Export / Share") { exporting = bend }
                         Button("Edit project details") {
                             editing = bend
                             projectName = bend.projectName ?? ""
@@ -87,6 +89,13 @@ struct ProjectHistoryView: View {
             }
             .navigationTitle("Saved Bends")
             .toolbar { EditButton() }
+            .sheet(item: $exporting) { bend in
+                NavigationStack {
+                    ProjectExportView(project: BendProjectExport(title: bend.projectName ?? bend.mode, mode: bend.mode, firstValue: bend.firstValue, secondValue: bend.secondValue, result: bend.result, notes: bend.notes))
+                        .navigationTitle("Export Project")
+                        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { exporting = nil } } }
+                }
+            }
             .sheet(item: $editing) { bend in
                 NavigationStack {
                     Form {
