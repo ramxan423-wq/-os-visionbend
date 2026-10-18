@@ -9,6 +9,7 @@ struct ConduitScanView: View {
     @State private var referenceWidth = ""
     @State private var referencePixels = ""
     @State private var measuredPixels: Double?
+    @State private var useReference = true
 
     var body: some View {
         VStack(spacing: 16) {
@@ -16,14 +17,19 @@ struct ConduitScanView: View {
                 Image(uiImage: image).resizable().scaledToFit()
             }
             Button("Scan conduit photo") { showPicker = true }
+            Toggle("Use same-plane size reference", isOn: $useReference)
             TextField("Reference object actual width (mm)", text: $referenceWidth).keyboardType(.decimalPad)
             TextField("Reference object width in photo (pixels)", text: $referencePixels).keyboardType(.decimalPad)
             if let measuredPixels,
                let width = Double(referenceWidth.replacingOccurrences(of: ",", with: ".")),
                let pixels = Double(referencePixels.replacingOccurrences(of: ",", with: ".")),
                width > 0, pixels > 0 {
-                Text(String(format: "Estimated visible object width: %.1f mm", measuredPixels * width / pixels))
-                    .font(.headline)
+                if let estimate = ConduitDiameterMath.calibratedDiameter(conduitPixels: measuredPixels, referencePixels: pixels, referenceMillimeters: width) {
+                    Text(String(format: "Estimated width: %.1f mm (± %.1f mm pixel error only)", estimate.millimeters, estimate.uncertaintyMillimeters))
+                        .font(.headline)
+                    Text("This uncertainty excludes perspective and wrong-edge detection. Not a certified diameter.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             Text(result).font(.callout)
             Text("Experimental estimate requires a known-size reference in the same image plane. Contour thickness is not a verified outer diameter. Confirm with calipers.")
