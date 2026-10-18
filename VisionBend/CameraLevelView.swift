@@ -11,6 +11,7 @@ struct CameraLevelView: View {
     @State private var pitchZero = 0.0
     @State private var rollZero = 0.0
     @State private var calibrated = false
+    @State private var targetAngle = "90"
     private let motion = CMMotionManager()
 
     var body: some View {
@@ -51,10 +52,16 @@ struct CameraLevelView: View {
                     }
                     .buttonStyle(.bordered)
                     .disabled(!motionAvailable)
+                    TextField("Target angle (degrees)", text: $targetAngle)
+                        .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                    if let target = Double(targetAngle), target.isFinite, target >= 0, target <= 180 {
+                        Text(String(format: "Device pitch difference: %+.1f°", abs(pitch - pitchZero) - target))
+                            .font(.headline.monospacedDigit())
+                    }
                     Text(calibrated ? "Relative level (zeroed)" : "Device-relative level")
                         .font(.caption)
                     if !motionAvailable { Text("Motion sensor unavailable").font(.caption) }
-                    Text("For reference only; calibrate with a physical level.")
+                    Text("This measures PHONE orientation, not the conduit angle automatically. Align phone with conduit and verify with a physical angle finder.")
                         .font(.caption)
                 }
                 .padding()
