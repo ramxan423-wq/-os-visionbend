@@ -7,7 +7,7 @@ enum BendCalculationError: LocalizedError {
 
 enum BendCalculations {
     static func offsetSpacing(rise: Double, angleDegrees: Double) throws -> Double {
-        guard rise > 0, angleDegrees > 0, angleDegrees < 90 else { throw BendCalculationError.invalidInput }
+        guard rise.isFinite, angleDegrees.isFinite, rise > 0, angleDegrees > 0, angleDegrees < 90 else { throw BendCalculationError.invalidInput }
         return rise / sin(angleDegrees * .pi / 180)
     }
 
@@ -18,7 +18,7 @@ enum BendCalculations {
 
     // Symmetric three-point saddle: outer bends at half the center angle.
     static func saddleOuterMarkDistance(height: Double, centerAngleDegrees: Double) throws -> Double {
-        guard height > 0, centerAngleDegrees > 0, centerAngleDegrees < 180 else { throw BendCalculationError.invalidInput }
+        guard height.isFinite, centerAngleDegrees.isFinite, height > 0, centerAngleDegrees > 0, centerAngleDegrees < 180 else { throw BendCalculationError.invalidInput }
         return height / sin(centerAngleDegrees * .pi / 360)
     }
 }
