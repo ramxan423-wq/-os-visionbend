@@ -1,0 +1,32 @@
+name: VisionBend iOS build verification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'VisionBend/**'
+      - '.github/workflows/visionbend-ios.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ios-build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate iOS Xcode project
+        working-directory: .
+        run: xcodegen generate
+      - name: Build iOS simulator app (unsigned)
+        working-directory: .
+        run: |
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Check project structure
+        run: |
+          test -f VisionBend/ContentView.swift
+          test -f VisionBend/BendCalculations.swift
+          test -f VisionBendTests/BendCalculationsTests.swift
