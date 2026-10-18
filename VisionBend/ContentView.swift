@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var history = BendHistory()
     @AppStorage("visionbend.appearance") private var appearance = 0
     @AppStorage("visionbend.units") private var units = 0
+    @State private var previousUnit = 0
     @State private var showHistory = false
     @State private var showSettings = false
     @State private var showCamera = false
@@ -74,6 +75,22 @@ struct ContentView: View {
                 }.padding()
             }
             .background(Color(uiColor: .systemBackground))
+            .onAppear { previousUnit = units }
+            .onChange(of: units) { newValue in
+                guard let oldUnit = MeasurementUnit(rawValue: previousUnit),
+                      let newUnit = MeasurementUnit(rawValue: newValue) else {
+                    previousUnit = newValue
+                    return
+                }
+                if let first = Double(height.replacingOccurrences(of: ",", with: ".")), first.isFinite {
+                    height = String(format: "%.4f", oldUnit.convert(first, to: newUnit))
+                }
+                if mode == 4, let second = Double(angle.replacingOccurrences(of: ",", with: ".")), second.isFinite {
+                    angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
+                }
+                output = ""
+                previousUnit = newValue
+            }
             .navigationTitle("VisionBend")
             .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
             .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
