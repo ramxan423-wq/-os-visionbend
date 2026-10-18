@@ -17,6 +17,7 @@ struct MultiBendPlannerView: View {
     @State private var marks: [BendMark] = []
     @State private var message = ""
     @StateObject private var watchSync = PhoneWatchSync.shared
+    @State private var verifiedModelID = ""
     @State private var manufacturer = ""
     @State private var benderModel = ""
     @State private var conduitType = "EMT"
@@ -77,6 +78,21 @@ struct MultiBendPlannerView: View {
                 }
                 Button("Add Mark") { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
+            }
+            Section("Verified manufacturer profile") {
+                Picker("Bender model", selection: $verifiedModelID) {
+                    Text("Manual / unsupported model").tag("")
+                    ForEach(VerifiedBenderCatalog.entries) { item in
+                        Text("\(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)").tag(item.id)
+                    }
+                }
+                .onChange(of: verifiedModelID) { id in applyVerifiedModel(id) }
+                if let item = VerifiedBenderCatalog.entries.first(where: { $0.id == verifiedModelID }) {
+                    Text("Official profile: \(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)")
+                    if let url = URL(string: item.sourceURL) { Link("Manufacturer source", destination: url) }
+                    Text("Only the exact model, conduit and size are covered. No Greenlee 555 data is included until its model-specific shoe and conduit tables are verified.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             Section("Model-calibrated 90° stub mark") {
                 TextField("Manufacturer", text: $manufacturer)
@@ -165,6 +181,21 @@ struct MultiBendPlannerView: View {
                                unitToMeters: selectedUnits == 0 ? 0.001 : selectedUnits == 1 ? 0.01 : 0.0254)
             }
         }
+    }
+
+    private func applyVerifiedModel(_ id: String) {
+        guard let item = VerifiedBenderCatalog.entries.first(where: { $0.id == id }) else { return }
+        let factor = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
+        manufacturer = item.brand
+        benderModel = item.model
+        conduitType = item.conduit
+        tradeSize = item.tradeSize
+        referenceMark = "Arrow"
+        if let deduct = item.deductInches { takeUp = String(format: "%.4f", deduct * factor) }
+        if let radius = item.radiusInches { centerlineRadius = String(format: "%.4f", radius * factor) }
+        correction = "0"
+        manualSource = item.sourceURL
+        message = "Verified profile loaded. Stub arrow take-up and centerline radius now use this model and selected units. Check field springback."
     }
 
     private func generatePreset() {
