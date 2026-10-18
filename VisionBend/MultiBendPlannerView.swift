@@ -199,7 +199,7 @@ struct MultiBendPlannerView: View {
         }
         marks = proposed
         pdfURL = nil
-        message = preset == "Rolling Offset"
+        message = preset == "Compound 90°" ? "Theoretical 90 + 90 bend stations generated. NOT bender arrow marks; confirm model-specific references and test bend." : preset == "Rolling Offset"
             ? String(format: "Roll orientation %.1f degrees. Verify orientation and bender calibration.", atan2(run, rise) * 180 / .pi)
             : "Theoretical marks ready. Confirm reference marks, bend direction, radius and springback."
     }
