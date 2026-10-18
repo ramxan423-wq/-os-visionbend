@@ -3,9 +3,10 @@ import AVFoundation
 @testable import VisionBend
 
 final class CameraPermissionTests: XCTestCase {
-    func testCameraUsageDescriptionIsPresent() {
-        let description = Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") as? String
-        XCTAssertNotNil(description)
+    func testCameraUsageDescriptionIsPresentInAppTarget() {
+        let appBundle = Bundle(for: BendHistory.self)
+        let description = appBundle.object(forInfoDictionaryKey: "NSCameraUsageDescription") as? String
+        XCTAssertNotNil(description, "The iOS app target must declare NSCameraUsageDescription")
         XCTAssertFalse(description?.isEmpty ?? true)
     }
 
