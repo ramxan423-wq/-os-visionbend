@@ -5,6 +5,8 @@ import SceneKit
 struct BendShapePreview: View {
     let marks: [BendMark]
     let length: Double
+    var centerlineRadius: Double = 0
+    var conduitOutsideDiameter: Double = 0
 
     var body: some View {
         SceneView(scene: makeScene(), options: [.allowsCameraControl, .autoenablesDefaultLighting])
@@ -21,7 +23,7 @@ struct BendShapePreview: View {
         var point = SIMD3<Float>(0, 0, 0)
         var heading = SIMD3<Float>(1, 0, 0)
         var previous: Double = 0
-        let pipeRadius: CGFloat = 0.014
+        let pipeRadius: CGFloat = CGFloat(max(0.007, min(0.08, conduitOutsideDiameter > 0 ? conduitOutsideDiameter * Double(scale) / 2 : 0.014)))
         func segment(_ distance: Double) {
             let end = point + heading * Float(distance) * scale
             let startV = SCNVector3(point.x, point.y, point.z)
@@ -42,8 +44,10 @@ struct BendShapePreview: View {
             _ = endV
         }
         for mark in sorted {
-            segment(mark.position - previous)
-            previous = mark.position
+            let arcLength = centerlineRadius > 0 ? centerlineRadius * mark.angle * .pi / 180 : 0
+            let startArc = max(previous, mark.position - arcLength / 2)
+            segment(startArc - previous)
+            previous = startArc
             let radians = Float(mark.angle * .pi / 180)
             let axis: SIMD3<Float>
             switch mark.direction {
@@ -52,14 +56,24 @@ struct BendShapePreview: View {
             case "Right": axis = SIMD3<Float>(0, -1, 0)
             default: axis = SIMD3<Float>(0, 0, 1)
             }
-            heading = simd_normalize(simd_act(simd_quatf(angle: radians, axis: axis), heading))
+            if centerlineRadius > 0 {
+                let pieces = 20
+                for _ in 0..<pieces {
+                    heading = simd_normalize(simd_act(simd_quatf(angle: radians / Float(pieces), axis: axis), heading))
+                    segment(arcLength / Double(pieces))
+                }
+                previous = startArc + arcLength
+            } else {
+                heading = simd_normalize(simd_act(simd_quatf(angle: radians, axis: axis), heading))
+                previous = mark.position
+            }
             let marker = SCNSphere(radius: 0.026)
             marker.firstMaterial?.diffuse.contents = UIColor.systemBlue
             let markerNode = SCNNode(geometry: marker)
             markerNode.position = SCNVector3(point.x, point.y, point.z)
             scene.rootNode.addChildNode(markerNode)
         }
-        segment(length - previous)
+        segment(max(0, length - previous))
         let camera = SCNNode()
         camera.camera = SCNCamera()
         camera.position = SCNVector3(2, 2, 5)
