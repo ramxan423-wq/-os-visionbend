@@ -6,6 +6,9 @@ struct ConduitScanView: View {
     @State private var image: UIImage?
     @State private var result = "Choose a conduit photo to inspect."
     @State private var showPicker = false
+    @State private var referenceWidth = ""
+    @State private var referencePixels = ""
+    @State private var measuredPixels: Double?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -13,8 +16,17 @@ struct ConduitScanView: View {
                 Image(uiImage: image).resizable().scaledToFit()
             }
             Button("Scan conduit photo") { showPicker = true }
+            TextField("Reference object actual width (mm)", text: $referenceWidth).keyboardType(.decimalPad)
+            TextField("Reference object width in photo (pixels)", text: $referencePixels).keyboardType(.decimalPad)
+            if let measuredPixels,
+               let width = Double(referenceWidth.replacingOccurrences(of: ",", with: ".")),
+               let pixels = Double(referencePixels.replacingOccurrences(of: ",", with: ".")),
+               width > 0, pixels > 0 {
+                Text(String(format: "Estimated visible object width: %.1f mm", measuredPixels * width / pixels))
+                    .font(.headline)
+            }
             Text(result).font(.callout)
-            Text("Experimental shape detection. Material and diameter must be confirmed manually.")
+            Text("Experimental estimate requires a known-size reference in the same image plane. Contour thickness is not a verified outer diameter. Confirm with calipers.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding()
@@ -40,7 +52,19 @@ struct ConduitScanView: View {
                     return max(rect.width, rect.height) > 0.2 &&
                            max(rect.width, rect.height) / max(0.001, min(rect.width, rect.height)) > 3.5
                 }
+                let candidate = candidates.max { a, b in
+                    let aa = a.normalizedPath.boundingBox
+                    let bb = b.normalizedPath.boundingBox
+                    return max(aa.width, aa.height) < max(bb.width, bb.height)
+                }
+                let imageWidth = Double(cgImage.width)
+                let imageHeight = Double(cgImage.height)
+                let widthPixels = candidate.map { item -> Double in
+                    let rect = item.normalizedPath.boundingBox
+                    return min(Double(rect.width) * imageWidth, Double(rect.height) * imageHeight)
+                }
                 DispatchQueue.main.async {
+                    measuredPixels = widthPixels
                     result = candidates.isEmpty ? "No elongated object detected." : "Possible conduit shape detected (\(candidates.count) candidates). Confirm manually."
                 }
             } catch {
