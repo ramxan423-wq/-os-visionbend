@@ -70,6 +70,7 @@ struct ContentView: View {
                             guard let first = Double(height.replacingOccurrences(of: ",", with: ".")),
                                   let second = Double(angle.replacingOccurrences(of: ",", with: ".")) else { return }
                             let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle"]
+                            guard names.indices.contains(mode) else { return }
                             history.add(mode: names[mode], first: first, second: second, result: output)
                         }
                         .tint(accent)
@@ -147,6 +148,8 @@ struct ContentView: View {
             } else if mode == 6 {
                 let spacing = try ExtraBendCalculations.fourPointSaddleMarkSpacing(clearance: rise, bendAngleDegrees: degrees)
                 output = String(format: "Each offset mark spacing: %.2f", spacing)
+            } else {
+                errorMessage = "Unknown calculator mode. Select a mode again."
             }
         } catch {
             errorMessage = error.localizedDescription
