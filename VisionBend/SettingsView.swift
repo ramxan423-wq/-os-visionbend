@@ -20,7 +20,7 @@ struct SettingsView: View {
                         Text("Centimeters").tag(1)
                         Text("Inches").tag(2)
                     }
-                    Text("Changing units changes labels only; it does not convert previously entered values.")
+                    Text("Changing units converts current calculator measurements; saved records retain their original values.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Safety") {
