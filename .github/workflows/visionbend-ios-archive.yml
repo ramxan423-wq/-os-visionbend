@@ -42,12 +42,16 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k temp-password "$KEYCHAIN"
           security list-keychains -d user -s "$KEYCHAIN"
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/visionbend.mobileprovision"
+          security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$RUNNER_TEMP/profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$RUNNER_TEMP/profile.plist")
+          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
       - name: Build signed App Store archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/VisionBend.xcarchive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="" archive
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/VisionBend.xcarchive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" archive
       - name: Package archive
         run: |
           cd "$RUNNER_TEMP"
