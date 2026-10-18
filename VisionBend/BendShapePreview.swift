@@ -1,5 +1,6 @@
 import SwiftUI
 import SceneKit
+import simd
 
 /// Geometric preview: bend stations are idealized centerline pivots, not mandrel-radius simulations.
 struct BendShapePreview: View {
@@ -18,7 +19,7 @@ struct BendShapePreview: View {
         let scene = SCNScene()
         guard length > 0 else { return scene }
         let scale = Float(2.5 / length)
-        let sorted = marks.filter { $0.position >= 0 && $0.position <= length && $0.angle > 0 && $0.angle <= 90 }
+        let sorted = marks.filter { $0.position.isFinite && $0.position >= 0 && $0.position <= length && $0.angle.isFinite && $0.angle > 0 && $0.angle <= 90 }
             .sorted { $0.position < $1.position }
         var point = SIMD3<Float>(0, 0, 0)
         var heading = SIMD3<Float>(1, 0, 0)
@@ -26,8 +27,6 @@ struct BendShapePreview: View {
         let pipeRadius: CGFloat = CGFloat(max(0.007, min(0.08, conduitOutsideDiameter > 0 ? conduitOutsideDiameter * Double(scale) / 2 : 0.014)))
         func segment(_ distance: Double) {
             let end = point + heading * Float(distance) * scale
-            let startV = SCNVector3(point.x, point.y, point.z)
-            let endV = SCNVector3(end.x, end.y, end.z)
             let delta = end - point
             let magnitude = sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z)
             if magnitude > 0.0001 {
@@ -40,8 +39,6 @@ struct BendShapePreview: View {
                 scene.rootNode.addChildNode(node)
             }
             point = end
-            _ = startV
-            _ = endV
         }
         for mark in sorted {
             let arcLength = centerlineRadius > 0 ? centerlineRadius * mark.angle * .pi / 180 : 0
