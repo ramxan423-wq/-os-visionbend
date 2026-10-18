@@ -110,7 +110,7 @@ struct ContentView: View {
             .sheet(isPresented: $showCamera) {
                 NavigationStack {
                     CameraLevelView()
-                        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { showCamera = false } } }
+                        .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Done") { showCamera = false } } }
                 }
             }
         }
