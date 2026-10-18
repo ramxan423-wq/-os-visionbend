@@ -12,7 +12,7 @@ enum BendCalculations {
     }
 
     static func offsetShrink(rise: Double, angleDegrees: Double) throws -> Double {
-        guard rise > 0, angleDegrees > 0, angleDegrees < 90 else { throw BendCalculationError.invalidInput }
+        guard rise.isFinite, angleDegrees.isFinite, rise > 0, angleDegrees > 0, angleDegrees < 90 else { throw BendCalculationError.invalidInput }
         return rise * tan(angleDegrees * .pi / 360)
     }
 
