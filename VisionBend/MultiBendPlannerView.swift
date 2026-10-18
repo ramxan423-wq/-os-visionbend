@@ -75,6 +75,10 @@ struct MultiBendPlannerView: View {
                 Text("Marks are measured from the starting end. The drawing shows mark positions, not actual post-bend shape.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section("3D preview") {
+                BendShapePreview(marks: sorted, length: length).frame(height: 280)
+                Text("Theoretical shape only. Confirm bend radius and equipment calibration.")
+            }
             Section("Bend sequence") {
                 ForEach(sorted) { mark in
                     HStack {
