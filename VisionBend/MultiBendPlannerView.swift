@@ -18,6 +18,7 @@ struct MultiBendPlannerView: View {
     @State private var message = ""
     @StateObject private var watchSync = PhoneWatchSync.shared
     @State private var verifiedModelID = ""
+    @State private var confirmedIMCHardware = false
     @State private var manufacturer = ""
     @State private var benderModel = ""
     @State private var conduitType = "EMT"
@@ -91,6 +92,11 @@ struct MultiBendPlannerView: View {
                     }
                 }
                 .onChange(of: verifiedModelID) { id in applyVerifiedModel(id) }
+                if verifiedModelID.hasPrefix("greenlee-555cx-imc-onehalf") || verifiedModelID.hasPrefix("greenlee-555cx-imc-two") {
+                    Toggle("28008 shoe group and 13856 IMC squeeze roller installed", isOn: $confirmedIMCHardware)
+                    Text("Required together for 1-1/2 and 2 inch IMC. Confirm physical equipment before generating marks.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
                 if let item = VerifiedBenderCatalog.entries.first(where: { $0.id == verifiedModelID }) {
                     Text("Official profile: \(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)")
                     if let url = URL(string: item.sourceURL) { Link("Manufacturer source", destination: url) }
@@ -193,6 +199,7 @@ struct MultiBendPlannerView: View {
     private func applyVerifiedModel(_ id: String) {
         guard let item = VerifiedBenderCatalog.entries.first(where: { $0.id == id }) else { return }
         let factor = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
+        confirmedIMCHardware = false
         manufacturer = item.brand
         benderModel = item.model
         conduitType = item.conduit
@@ -211,7 +218,15 @@ struct MultiBendPlannerView: View {
             : "Verified deduct and radius loaded. Check reference mark and field springback."
     }
 
+    private var requiresIMCHardware: Bool {
+        verifiedModelID == "greenlee-555cx-imc-onehalf" || verifiedModelID == "greenlee-555cx-imc-two"
+    }
+
     private func generatePreset() {
+        if requiresIMCHardware && !confirmedIMCHardware {
+            message = "Install and confirm both 28008 shoe group and 13856 IMC squeeze roller first."
+            return
+        }
         func number(_ value: String) -> Double? { Double(value.replacingOccurrences(of: ",", with: ".")) }
         guard let rise = number(presetRise), let angle = number(presetAngle), let run = number(presetRun),
               rise.isFinite, angle.isFinite, run.isFinite,
@@ -301,6 +316,10 @@ struct MultiBendPlannerView: View {
     }
 
     private func addCalibratedMark() {
+        if requiresIMCHardware && !confirmedIMCHardware {
+            message = "Confirm 28008 shoe group AND 13856 IMC squeeze roller before marking."
+            return
+        }
         guard !manufacturer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !benderModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !tradeSize.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
