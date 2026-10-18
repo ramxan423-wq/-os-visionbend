@@ -30,7 +30,10 @@ jobs:
       - name: Run iOS unit tests
         working-directory: .
         run: |
-          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' CODE_SIGNING_ALLOWED=NO test
+          xcrun simctl list devices available
+          DEVICE_ID=$(xcrun simctl list devices available | grep -E 'iPhone .*\\(' | head -1 | sed -E 's/.*\\(([0-9A-F-]{36})\\).*/\\1/')
+          if [ -z "$DEVICE_ID" ]; then echo 'No iPhone simulator available'; exit 1; fi
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" CODE_SIGNING_ALLOWED=NO test
       - name: Check project structure
         run: |
           test -f VisionBend/ContentView.swift
