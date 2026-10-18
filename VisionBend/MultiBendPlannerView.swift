@@ -34,6 +34,9 @@ struct MultiBendPlannerView: View {
     @State private var presetAngle = "30"
     @State private var presetRun = "300"
     @State private var obstructionDistance = ""
+    @State private var saddleZ = ""
+    @State private var saddleL1 = ""
+    @State private var saddleL2 = ""
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
     @State private var showARMarks = false
@@ -71,6 +74,14 @@ struct MultiBendPlannerView: View {
                 if preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") {
                     TextField("Distance to obstruction", text: $obstructionDistance).keyboardType(.decimalPad)
                 }
+                if (preset == "3-Point Saddle" || preset == "4-Point Saddle") && verifiedModelID.hasPrefix("greenlee-555") {
+                    TextField("Manufacturer table Z", text: $saddleZ).keyboardType(.decimalPad)
+                    TextField("Manufacturer table L1", text: $saddleL1).keyboardType(.decimalPad)
+                    if preset == "4-Point Saddle" {
+                        TextField("Manufacturer table L2", text: $saddleL2).keyboardType(.decimalPad)
+                    }
+                    Text("Use values from exact Greenlee shoe, size, angle and obstruction-height table.").font(.caption)
+                }
                 Button("Generate Marks") { generatePreset() }
                 Text("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -92,7 +103,7 @@ struct MultiBendPlannerView: View {
                     }
                 }
                 .onChange(of: verifiedModelID) { id in applyVerifiedModel(id) }
-                if verifiedModelID.hasPrefix("greenlee-555cx-imc-onehalf") || verifiedModelID.hasPrefix("greenlee-555cx-imc-two") {
+                if requiresIMCHardware {
                     Toggle("28008 shoe group and 13856 IMC squeeze roller installed", isOn: $confirmedIMCHardware)
                     Text("Required together for 1-1/2 and 2 inch IMC. Confirm physical equipment before generating marks.")
                         .font(.caption).foregroundStyle(.orange)
@@ -219,7 +230,7 @@ struct MultiBendPlannerView: View {
     }
 
     private var requiresIMCHardware: Bool {
-        verifiedModelID == "greenlee-555cx-imc-onehalf" || verifiedModelID == "greenlee-555cx-imc-two"
+        verifiedModelID == "greenlee-555cx-imc-onehalf" || verifiedModelID == "greenlee-555cx-imc-two" || (verifiedModelID.contains("-12580-imc-") && (tradeSize == "1-1/2 in" || tradeSize == "2 in"))
     }
 
     private func generatePreset() {
@@ -262,10 +273,27 @@ struct MultiBendPlannerView: View {
                 steps = [(first, angle, "Up"), (first + spacing, angle, "Down")]
             }
         case "3-Point Saddle":
+            if verifiedModelID.hasPrefix("greenlee-555") {
+                guard let z = number(saddleZ), let l1 = number(saddleL1), z.isFinite, l1.isFinite, z >= 0, l1 > 0 else {
+                    message = "Enter Greenlee saddle table Z and L1."; return
+                }
+                let middle = run - z
+                steps = [(middle - l1, angle, "Up"), (middle, 2 * angle, "Down"), (middle + l1, angle, "Up")]
+                break
+            }
             guard angle <= 45 else { message = "Outer saddle angle must be at most 45 degrees."; return }
             let middle = length / 2
             steps = [(middle - spacing, angle, "Up"), (middle, 2 * angle, "Down"), (middle + spacing, angle, "Up")]
         case "4-Point Saddle":
+            if verifiedModelID.hasPrefix("greenlee-555") {
+                guard let z = number(saddleZ), let l1 = number(saddleL1), let l2 = number(saddleL2), z.isFinite, l1.isFinite, l2.isFinite, z >= 0, l1 > 0, l2 > 0 else {
+                    message = "Enter Greenlee saddle table Z, L1 and L2."; return
+                }
+                let start = run - z
+                let thirdMark = start + l2 + rise
+                steps = [(start, angle, "Up"), (start + l1, angle, "Down"), (thirdMark, angle, "Down"), (thirdMark + l1, angle, "Up")]
+                break
+            }
             let third = first + spacing + run
             steps = [(first, angle, "Up"), (first + spacing, angle, "Down"), (third, angle, "Down"), (third + spacing, angle, "Up")]
         case "Kick":
@@ -279,6 +307,10 @@ struct MultiBendPlannerView: View {
             let n = 5
             steps = (0..<n).map { (first + Double($0) * run / Double(n - 1), angle / Double(n), "Up") }
         case "Compound 90°":
+            if verifiedModelID.hasPrefix("greenlee-555") {
+                message = "No verified Greenlee 555 compound 90 physical mark table. Theoretical stations cannot be used as hook-front marks."
+                return
+            }
             guard let radius = number(centerlineRadius), radius > 0 else { message = "Enter verified bend radius."; return }
             steps = [(rise, 90, "Up"), (rise + run + radius * .pi / 2, 90, "Right")]
         default:
