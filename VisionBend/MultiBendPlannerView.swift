@@ -174,6 +174,9 @@ struct MultiBendPlannerView: View {
             }
         }
         .navigationTitle("Multi-Bend Planner")
+        .onChange(of: selectedUnits) { _ in
+            if !verifiedModelID.isEmpty { applyVerifiedModel(verifiedModelID) }
+        }
         .toolbar { EditButton() }
         .sheet(isPresented: $showARMarks) {
             NavigationStack {
