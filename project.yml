@@ -18,7 +18,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.visionbend.conduit
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: VisionBend
-        INFOPLIST_KEY_NSCameraUsageDescription: Camera preview helps align conduit bends and check level.\n        INFOPLIST_KEY_NSWorldSensingUsageDescription: AR measurement uses camera tracking to estimate distances between selected points.
+        INFOPLIST_KEY_NSCameraUsageDescription: "Camera preview helps align conduit bends and check level."
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         CODE_SIGN_STYLE: Automatic
