@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var showCamera = false
     @State private var showAR = false
     @State private var showPremium = false
+    @State private var showReference = false
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
     @AppStorage("visionbend.lastAngle") private var angle = "30"
@@ -42,6 +43,7 @@ struct ContentView: View {
                     HStack {
                         Button("AR Measure") { showAR = true }
                         Spacer()
+                        Button("Bender Reference") { showReference = true }
                         Button("Premium") { showPremium = true }
                     }.tint(accent)
                     Picker("Mode", selection: $mode) {
@@ -52,11 +54,12 @@ struct ContentView: View {
                         Text("Rolling").tag(4)
                         Text("90° Stub").tag(5)
                         Text("4-Point Saddle").tag(6)
+                        Text("Compound 90° Geometry").tag(7)
                     }.pickerStyle(.menu)
-                    Text(mode == 3 ? "Centerline Radius" : mode == 4 ? "Horizontal Offset" : mode == 5 ? "Desired Stub Length" : "Rise / Height")
+                    Text(mode == 3 ? "Centerline Radius" : mode == 4 ? "Horizontal Offset" : mode == 5 ? "Desired Stub Length" : mode == 7 ? "First perpendicular leg" : "Rise / Height")
                     TextField("Measurement", text: $height)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                    Text(mode == 4 ? "Vertical Offset" : mode == 5 ? "Bender Take-Up" : mode == 1 ? "Center Angle (degrees)" : "Bend Angle (degrees)")
+                    Text(mode == 4 ? "Vertical Offset" : mode == 5 ? "Bender Take-Up" : mode == 7 ? "Second perpendicular leg" : mode == 1 ? "Center Angle (degrees)" : "Bend Angle (degrees)")
                     TextField("Angle", text: $angle)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                     Button("CALCULATE", action: calculate)
@@ -67,9 +70,9 @@ struct ContentView: View {
                     if !errorMessage.isEmpty { Text(errorMessage).foregroundStyle(.red) }
                     if !output.isEmpty {
                         Button("Save Calculation") {
-                            guard let first = Double(height.replacingOccurrences(of: ",", with: ".")),
-                                  let second = Double(angle.replacingOccurrences(of: ",", with: ".")) else { return }
-                            let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle"]
+                            guard let first = numericInput(height),
+                                  let second = numericInput(angle) else { return }
+                            let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90° Geometry"]
                             guard names.indices.contains(mode) else { return }
                             history.add(mode: names[mode], first: first, second: second, result: output)
                         }
@@ -92,10 +95,10 @@ struct ContentView: View {
                     previousUnit = newValue
                     return
                 }
-                if let first = Double(height.replacingOccurrences(of: ",", with: ".")), first.isFinite {
+                if let first = numericInput(height), first.isFinite {
                     height = String(format: "%.4f", oldUnit.convert(first, to: newUnit))
                 }
-                if (mode == 4 || mode == 5), let second = Double(angle.replacingOccurrences(of: ",", with: ".")), second.isFinite {
+                if (mode == 4 || mode == 5), let second = numericInput(angle), second.isFinite {
                     angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
                 }
                 output = ""
@@ -103,6 +106,7 @@ struct ContentView: View {
             }
             .navigationTitle("VisionBend")
             .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
+            .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
             .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
             .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
             .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
@@ -116,11 +120,15 @@ struct ContentView: View {
         }
     }
 
+    private func numericInput(_ value: String) -> Double? {
+        units == 2 ? AdvancedBendCalculations.parseInches(value) : Double(value.replacingOccurrences(of: ",", with: "."))
+    }
+
     private func calculate() {
         output = ""
         errorMessage = ""
-        guard let rise = Double(height.replacingOccurrences(of: ",", with: ".")),
-              let degrees = Double(angle.replacingOccurrences(of: ",", with: ".")),
+        guard let rise = numericInput(height),
+              let degrees = numericInput(angle),
               rise.isFinite, degrees.isFinite else {
             errorMessage = "Enter valid numeric values."
             return
@@ -148,11 +156,18 @@ struct ContentView: View {
             } else if mode == 6 {
                 let spacing = try ExtraBendCalculations.fourPointSaddleMarkSpacing(clearance: rise, bendAngleDegrees: degrees)
                 output = String(format: "Each offset mark spacing: %.2f", spacing)
+            } else if mode == 7 {
+                let travel = try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: rise, secondLeg: degrees)
+                let rotation = try AdvancedBendCalculations.compoundNinetyRotation(firstLeg: rise, secondLeg: degrees)
+                output = String(format: "Planar diagonal: %.2f\\nOrientation: %.1f°\\nGeometry only — physical bend marks require verified radius, bender and conduit size.", travel, rotation)
             } else {
                 errorMessage = "Unknown calculator mode. Select a mode again."
             }
         } catch {
             errorMessage = error.localizedDescription
+        }
+        if units == 2, !output.isEmpty {
+            output += "\\nFractional inches (first value): " + AdvancedBendCalculations.fractionalInches(rise)
         }
     }
 }
