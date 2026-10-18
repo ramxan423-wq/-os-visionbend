@@ -95,10 +95,10 @@ struct ContentView: View {
                     previousUnit = newValue
                     return
                 }
-                if let first = numericInput(height), first.isFinite {
+                if let first = (oldUnit == .inches ? AdvancedBendCalculations.parseInches(height) : Double(height.replacingOccurrences(of: ",", with: "."))), first.isFinite {
                     height = String(format: "%.4f", oldUnit.convert(first, to: newUnit))
                 }
-                if (mode == 4 || mode == 5), let second = numericInput(angle), second.isFinite {
+                if (mode == 4 || mode == 5 || mode == 7), let second = (oldUnit == .inches ? AdvancedBendCalculations.parseInches(angle) : Double(angle.replacingOccurrences(of: ",", with: "."))), second.isFinite {
                     angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
                 }
                 output = ""
@@ -159,7 +159,7 @@ struct ContentView: View {
             } else if mode == 7 {
                 let travel = try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: rise, secondLeg: degrees)
                 let rotation = try AdvancedBendCalculations.compoundNinetyRotation(firstLeg: rise, secondLeg: degrees)
-                output = String(format: "Planar diagonal: %.2f\\nOrientation: %.1f°\\nGeometry only — physical bend marks require verified radius, bender and conduit size.", travel, rotation)
+                output = String(format: "Planar diagonal: %.2f\nOrientation: %.1f°\nGeometry only — physical bend marks require verified radius, bender and conduit size.", travel, rotation)
             } else {
                 errorMessage = "Unknown calculator mode. Select a mode again."
             }
@@ -167,7 +167,7 @@ struct ContentView: View {
             errorMessage = error.localizedDescription
         }
         if units == 2, !output.isEmpty {
-            output += "\\nFractional inches (first value): " + AdvancedBendCalculations.fractionalInches(rise)
+            output += "\nFractional inches (first value): " + AdvancedBendCalculations.fractionalInches(rise)
         }
     }
 }
