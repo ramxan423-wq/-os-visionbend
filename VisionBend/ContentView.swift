@@ -20,120 +20,146 @@ struct ContentView: View {
     @AppStorage("visionbend.lastAngle") private var angle = "30"
     @State private var output = ""
     @State private var errorMessage = ""
+    @State private var selectedTab = 0
     private let accent = Color(red: 1, green: 0.45, blue: 0.08)
-
+    private let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90°"]
+    private var turkish: Bool { Locale.current.language.languageCode?.identifier == "tr" }
+    private func t(_ tr: String, _ en: String) -> String { turkish ? tr : en }
+    private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
+    private var firstLabel: String {
+        switch mode {
+        case 3: return t("Merkez yarıçapı", "Centerline radius")
+        case 4: return t("Yatay kaçıklık", "Horizontal offset")
+        case 5: return t("İstenen dik çıkış uzunluğu", "Desired stub length")
+        case 7: return t("Birinci dik kenar", "First perpendicular leg")
+        default: return t("Yükseklik / Mesafe", "Rise / height")
+        }
+    }
+    private var secondLabel: String {
+        switch mode {
+        case 4: return t("Dikey kaçıklık", "Vertical offset")
+        case 5: return t("Bükücü payı (take-up)", "Bender take-up")
+        case 7: return t("İkinci dik kenar", "Second perpendicular leg")
+        case 1: return t("Merkez açı (derece)", "Center angle (degrees)")
+        default: return t("Büküm açısı (derece)", "Bend angle (degrees)")
+        }
+    }
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("VISIONBEND")
-                        .font(.system(size: 30, weight: .black, design: .rounded))
-                        .foregroundStyle(accent)
-                    Text("Conduit Bending Calculator").foregroundStyle(.secondary)
-                    HStack {
-                        Button("Saved Bends") { showHistory = true }
-                        Spacer()
-                        Button("Settings") { showSettings = true }
-                    }
-                    .tint(accent)
-                    Text("Units: " + (units == 0 ? "mm" : units == 1 ? "cm" : "in"))
-                        .font(.caption).foregroundStyle(.secondary)
-                    Button { showCamera = true } label: {
-                        Label("Camera Level", systemImage: "camera.viewfinder")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(accent)
-                    Button("Conduit Photo Scan") { showConduitScan = true }
-                    Button("Depth-Assisted Scan (LiDAR)") { showDepthScan = true }
-                        .buttonStyle(.bordered)
-                    HStack {
-                        Button("AR Measure") { showAR = true }
-                        Spacer()
-                        Button("Bender Reference") { showReference = true }
-                        Button("Premium") { showPremium = true }
-                    }.tint(accent)
-                    Button("Multi-Bend Planner · 2D · PDF") { showMultiBend = true }
-                        .buttonStyle(.bordered)
-                        .tint(accent)
-                    Button("Conduit Cut Optimizer") { showCutPlanner = true }
-                        .buttonStyle(.bordered)
-                    Picker("Mode", selection: $mode) {
-                        Text("Offset").tag(0)
-                        Text("3-Point Saddle").tag(1)
-                        Text("Kick").tag(2)
-                        Text("Arc").tag(3)
-                        Text("Rolling").tag(4)
-                        Text("90° Stub").tag(5)
-                        Text("4-Point Saddle").tag(6)
-                        Text("Compound 90° Geometry").tag(7)
-                    }.pickerStyle(.menu)
-                    Text(mode == 3 ? "Centerline Radius" : mode == 4 ? "Horizontal Offset" : mode == 5 ? "Desired Stub Length" : mode == 7 ? "First perpendicular leg" : "Rise / Height")
-                    TextField("Measurement", text: $height)
-                        .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                    Text(mode == 4 ? "Vertical Offset" : mode == 5 ? "Bender Take-Up" : mode == 7 ? "Second perpendicular leg" : mode == 1 ? "Center Angle (degrees)" : "Bend Angle (degrees)")
-                    TextField("Angle", text: $angle)
-                        .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                    Button("CALCULATE", action: calculate)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity)
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
-                    if !errorMessage.isEmpty { Text(errorMessage).foregroundStyle(.red) }
-                    if !output.isEmpty {
-                        Button("Save Calculation") {
-                            guard let first = numericInput(height),
-                                  let second = numericInput(angle) else { return }
-                            let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90° Geometry"]
-                            guard names.indices.contains(mode) else { return }
-                            history.add(mode: names[mode], first: first, second: second, result: output)
-                        }
-                        .tint(accent)
-                        Text(output)
-                            .font(.title3.monospacedDigit())
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .background(Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
-                    }
-                    Text("Use consistent units. Verify conduit take-up and bender-specific allowances before bending.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }.padding()
+        TabView(selection: $selectedTab) {
+            NavigationStack { calculatorPage.navigationTitle("VisionBend") }
+                .tabItem { Label(t("Büküm", "Bends"), systemImage: "angle") }.tag(0)
+            NavigationStack { cameraPage.navigationTitle(t("Kamera", "Camera")) }
+                .tabItem { Label(t("Kamera", "Camera"), systemImage: "camera") }.tag(1)
+            NavigationStack { planningPage.navigationTitle(t("Planlama", "Planning")) }
+                .tabItem { Label(t("Plan", "Plan"), systemImage: "ruler") }.tag(2)
+            NavigationStack { projectsPage.navigationTitle(t("Projelerim", "Projects")) }
+                .tabItem { Label(t("Projeler", "Projects"), systemImage: "folder") }.tag(3)
+            NavigationStack { settingsPage.navigationTitle(t("Ayarlar", "Settings")) }
+                .tabItem { Label(t("Ayarlar", "Settings"), systemImage: "gearshape") }.tag(4)
+        }
+        .tint(accent)
+        .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
+        .onAppear { previousUnit = units }
+        .onChange(of: units) { newValue in
+            guard let oldUnit = MeasurementUnit(rawValue: previousUnit),
+                  let newUnit = MeasurementUnit(rawValue: newValue) else { previousUnit = newValue; return }
+            if let first = (oldUnit == .inches ? AdvancedBendCalculations.parseInches(height) : Double(height.replacingOccurrences(of: ",", with: "."))), first.isFinite {
+                height = String(format: "%.4f", oldUnit.convert(first, to: newUnit))
             }
-            .background(Color(uiColor: .systemBackground))
-            .onAppear { previousUnit = units }
-            .onChange(of: units) { newValue in
-                guard let oldUnit = MeasurementUnit(rawValue: previousUnit),
-                      let newUnit = MeasurementUnit(rawValue: newValue) else {
-                    previousUnit = newValue
-                    return
-                }
-                if let first = (oldUnit == .inches ? AdvancedBendCalculations.parseInches(height) : Double(height.replacingOccurrences(of: ",", with: "."))), first.isFinite {
-                    height = String(format: "%.4f", oldUnit.convert(first, to: newUnit))
-                }
-                if (mode == 4 || mode == 5 || mode == 7), let second = (oldUnit == .inches ? AdvancedBendCalculations.parseInches(angle) : Double(angle.replacingOccurrences(of: ",", with: "."))), second.isFinite {
-                    angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
-                }
-                output = ""
-                previousUnit = newValue
+            if [4,5,7].contains(mode), let second = (oldUnit == .inches ? AdvancedBendCalculations.parseInches(angle) : Double(angle.replacingOccurrences(of: ",", with: "."))), second.isFinite {
+                angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
             }
-            .navigationTitle("VisionBend")
-            .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
-            .sheet(isPresented: $showCutPlanner) { NavigationStack { ConduitCutOptimizerView() } }
-            .sheet(isPresented: $showMultiBend) { NavigationStack { MultiBendPlannerView() } }
-            .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
-            .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
-            .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
-            .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
-            .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $showDepthScan) { NavigationStack { DepthConduitScanView() } }
-            .sheet(isPresented: $showConduitScan) { NavigationStack { ConduitScanView() } }
-            .sheet(isPresented: $showCamera) {
-                NavigationStack {
-                    CameraLevelView()
-                        .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Done") { showCamera = false } } }
-                }
+            output = ""; previousUnit = newValue
+        }
+        .sheet(isPresented: $showCutPlanner) { NavigationStack { ConduitCutOptimizerView() } }
+        .sheet(isPresented: $showMultiBend) { NavigationStack { MultiBendPlannerView() } }
+        .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
+        .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
+        .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
+        .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
+        .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showDepthScan) { NavigationStack { DepthConduitScanView() } }
+        .sheet(isPresented: $showConduitScan) { NavigationStack { ConduitScanView() } }
+        .sheet(isPresented: $showCamera) {
+            NavigationStack {
+                CameraLevelView()
+                    .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(t("Bitti", "Done")) { showCamera = false } } }
             }
         }
+    }
+    private var calculatorPage: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(t("Boru Bükme Hesaplayıcı", "Conduit Bending Calculator"))
+                    .font(.title2.bold())
+                Text(t("1. Büküm türünü seç  2. Ölçüleri gir  3. Sonucu hesapla", "1. Choose bend  2. Enter measurements  3. Calculate"))
+                    .font(.subheadline).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(t("Büküm türü", "Bend type")).font(.headline)
+                    Picker(t("Büküm türü", "Bend type"), selection: $mode) {
+                        ForEach(names.indices, id: \.self) { i in Text(names[i]).tag(i) }
+                    }.pickerStyle(.menu).tint(accent)
+                        .onChange(of: mode) { _ in output = ""; errorMessage = "" }
+                    Text(firstLabel + " (" + unitName + ")").font(.subheadline.bold())
+                    TextField(firstLabel, text: $height).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                    Text(secondLabel + ([4,5,7].contains(mode) ? " (" + unitName + ")" : ""))
+                        .font(.subheadline.bold())
+                    TextField(secondLabel, text: $angle).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                    Button(action: calculate) {
+                        Label(t("Hesapla", "Calculate"), systemImage: "equal")
+                            .frame(maxWidth: .infinity).padding(.vertical, 8)
+                    }.buttonStyle(.borderedProminent).tint(accent)
+                }.padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                if !errorMessage.isEmpty { Text(errorMessage).foregroundStyle(.red) }
+                if !output.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(t("Hesaplama sonucu", "Calculation result")).font(.headline)
+                        Text(output).font(.body.monospacedDigit()).textSelection(.enabled)
+                        Button(t("Hesaplamayı Kaydet", "Save Calculation")) {
+                            guard let a = numericInput(height), let b = numericInput(angle), names.indices.contains(mode) else { return }
+                            history.add(mode: names[mode], first: a, second: b, result: output)
+                        }.tint(accent)
+                    }.padding().frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+                Text(t("Sahada uygulamadan önce bükücü modelinin paylarını ve ölçüleri doğrulayın.", "Verify your bender's take-up and allowances before field use."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }.padding()
+        }
+    }
+    private var cameraPage: some View {
+        List {
+            Section(t("Ölçüm araçları", "Measurement tools")) {
+                Label(t("Kamera terazisi", "Camera level"), systemImage: "camera.viewfinder")
+                    .onTapGesture { showCamera = true }
+                Label(t("Boruyu fotoğrafla tara", "Conduit photo scan"), systemImage: "camera.metering.center.weighted")
+                    .onTapGesture { showConduitScan = true }
+                Label(t("Derinlik destekli tarama (LiDAR)", "Depth-assisted scan (LiDAR)"), systemImage: "viewfinder")
+                    .onTapGesture { showDepthScan = true }
+                Label(t("AR mesafe ölçümü", "AR measure"), systemImage: "ruler")
+                    .onTapGesture { showAR = true }
+            }
+        }
+    }
+    private var planningPage: some View {
+        List {
+            Button { showMultiBend = true } label: { Label(t("Çoklu büküm ve 2D plan", "Multi-bend & 2D planner"), systemImage: "point.topleft.down.curvedto.point.bottomright.up") }
+            Button { showCutPlanner = true } label: { Label(t("Boru kesim optimizasyonu", "Conduit cut optimizer"), systemImage: "scissors") }
+            Button { showReference = true } label: { Label(t("Bükücü referans ve katalog", "Bender reference"), systemImage: "books.vertical") }
+        }.tint(accent)
+    }
+    private var projectsPage: some View {
+        List {
+            Button { showHistory = true } label: { Label(t("Kaydedilen hesaplamalar", "Saved bends"), systemImage: "clock.arrow.circlepath") }
+            Button { showMultiBend = true } label: { Label(t("Plan ve PDF dışa aktarma", "Planner & PDF export"), systemImage: "doc.richtext") }
+        }.tint(accent)
+    }
+    private var settingsPage: some View {
+        List {
+            Button { showSettings = true } label: { Label(t("Tema ve ölçü birimleri", "Appearance & units"), systemImage: "slider.horizontal.3") }
+            Button { showReference = true } label: { Label(t("Bükücü kataloğu", "Bender catalog"), systemImage: "book") }
+            Button { showPremium = true } label: { Label("Premium", systemImage: "star") }
+        }.tint(accent)
     }
 
     private func numericInput(_ value: String) -> Double? {
