@@ -1,0 +1,26 @@
+workflows:
+  visionbend-ios-check:
+    name: VisionBend iOS build check
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+      - name: Generate Xcode project
+        script: |
+          xcodegen generate
+      - name: Build iOS Simulator app
+        script: |
+          xcodebuild \
+            -project VisionBend.xcodeproj \
+            -scheme VisionBend \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+    artifacts:
+      - build/Build/Products/Debug-iphonesimulator/VisionBend.app
