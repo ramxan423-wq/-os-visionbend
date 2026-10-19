@@ -50,6 +50,8 @@ final class BendHistory: ObservableObject {
 }
 
 struct ProjectHistoryView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @ObservedObject var history: BendHistory
     @State private var editing: SavedBend?
     @State private var exporting: SavedBend?
@@ -62,8 +64,8 @@ struct ProjectHistoryView: View {
                 if history.items.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "tray").font(.title2)
-                        Text("No Saved Bends").font(.headline)
-                        Text("Save a calculation to see it here.").font(.caption)
+                        Text(l("No Saved Bends")).font(.headline)
+                        Text(l("Save a calculation to see it here.")).font(.caption)
                     }
                     .frame(maxWidth: .infinity)
                     .foregroundStyle(.secondary)
@@ -77,8 +79,8 @@ struct ProjectHistoryView: View {
                         Text("Inputs: \(bend.firstValue.formatted()) / \(bend.secondValue.formatted())")
                             .font(.caption).foregroundStyle(.secondary)
                         if let notes = bend.notes, !notes.isEmpty { Text(notes).font(.caption) }
-                        Button("Export / Share") { exporting = bend }
-                        Button("Edit project details") {
+                        Button(l("Export / Share")) { exporting = bend }
+                        Button(l("Edit project details")) {
                             editing = bend
                             projectName = bend.projectName ?? ""
                             notes = bend.notes ?? ""
@@ -87,7 +89,7 @@ struct ProjectHistoryView: View {
                 }
                 .onDelete(perform: history.remove)
             }
-            .navigationTitle("Saved Bends")
+            .navigationTitle(l("Saved Bends"))
             .toolbar { EditButton() }
             .sheet(item: $exporting) { bend in
                 NavigationStack {
