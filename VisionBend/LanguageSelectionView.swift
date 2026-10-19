@@ -45,7 +45,7 @@ struct LanguageSelectionView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
                 TextField("Search language / Dil ara", text: $search)
                     .textFieldStyle(.roundedBorder).padding(.horizontal)
-                List(filtered, id: \.code) { item in
+                List(Array(filtered.enumerated()), id: \.offset) { _, item in
                     Button {
                         selected = item.code
                     } label: {
