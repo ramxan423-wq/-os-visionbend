@@ -6,7 +6,7 @@ import ARKit
 struct ARMeasureView: View {
     @AppStorage("visionbend.language") private var language = "system"
     private var tr: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
-    private func t(_ a: String, _ b: String) -> String { tr ? a : b }
+    private func t(_ a: String, _ b: String) -> String { VisionBendLocalization.text(b, turkish: a, language: language) }
     @State private var points: [SIMD3<Float>] = []
     @State private var message = ""
     var body: some View {
