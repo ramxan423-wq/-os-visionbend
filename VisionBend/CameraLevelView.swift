@@ -5,7 +5,7 @@ import CoreMotion
 struct CameraLevelView: View {
     @AppStorage("visionbend.language") private var language = "system"
     private var tr: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
-    private func t(_ trText: String, _ enText: String) -> String { tr ? trText : enText }
+    private func t(_ trText: String, _ enText: String) -> String { VisionBendLocalization.text(enText, turkish: trText, language: language) }
     @State private var permissionGranted = false
     @State private var permissionChecked = false
     @State private var pitch = 0.0
