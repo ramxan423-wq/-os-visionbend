@@ -3,6 +3,9 @@ import AVFoundation
 import CoreMotion
 
 struct CameraLevelView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private var tr: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
+    private func t(_ trText: String, _ enText: String) -> String { tr ? trText : enText }
     @State private var permissionGranted = false
     @State private var permissionChecked = false
     @State private var pitch = 0.0
@@ -22,10 +25,10 @@ struct CameraLevelView: View {
                 Color.black
                 VStack(spacing: 12) {
                     Image(systemName: "camera.fill").font(.largeTitle)
-                    Text(permissionChecked ? "Camera access is required. Enable it in Settings." : "Checking camera permission…")
+                    Text(permissionChecked ? t("Kamera izni gerekli. Ayarlardan izin verin.", "Camera access is required. Enable it in Settings.") : t("Kamera izni kontrol ediliyor…", "Checking camera permission…"))
                         .multilineTextAlignment(.center)
                     if permissionChecked {
-                        Button("Open Settings") {
+                        Button(t("Ayarları Aç", "Open Settings")) {
                             guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                             UIApplication.shared.open(url)
                         }
@@ -35,16 +38,16 @@ struct CameraLevelView: View {
             VStack {
                 Spacer()
                 VStack(spacing: 8) {
-                    Text("CAMERA LEVEL").font(.headline)
-                    Text(String(format: "Pitch: %.1f°  Roll: %.1f°", pitch - pitchZero, roll - rollZero))
+                    Text(t("KAMERA TERAZİSİ", "CAMERA LEVEL")).font(.headline)
+                    Text(String(format: t("Öne eğim: %.1f°  Yan eğim: %.1f°", "Pitch: %.1f°  Roll: %.1f°"), pitch - pitchZero, roll - rollZero))
                         .font(.title3.monospacedDigit())
                     HStack(spacing: 14) {
-                        Button("Set Zero") {
+                        Button(t("Sıfırla (Kalibre Et)", "Set Zero")) {
                             pitchZero = pitch
                             rollZero = roll
                             calibrated = true
                         }
-                        Button("Reset") {
+                        Button(t("Kalibrasyonu Kaldır", "Reset")) {
                             pitchZero = 0
                             rollZero = 0
                             calibrated = false
@@ -52,16 +55,16 @@ struct CameraLevelView: View {
                     }
                     .buttonStyle(.bordered)
                     .disabled(!motionAvailable)
-                    TextField("Target angle (degrees)", text: $targetAngle)
+                    TextField(t("Hedef açı (derece)", "Target angle (degrees)"), text: $targetAngle)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                     if let target = Double(targetAngle), target.isFinite, target >= 0, target <= 180 {
-                        Text(String(format: "Device pitch difference: %+.1f°", abs(pitch - pitchZero) - target))
+                        Text(String(format: t("Hedef açı farkı: %+.1f°", "Device pitch difference: %+.1f°"), abs(pitch - pitchZero) - target))
                             .font(.headline.monospacedDigit())
                     }
-                    Text(calibrated ? "Relative level (zeroed)" : "Device-relative level")
+                    Text(calibrated ? t("Kalibre edilmiş göreli açı", "Relative level (zeroed)") : t("Telefona göre açı", "Device-relative level"))
                         .font(.caption)
-                    if !motionAvailable { Text("Motion sensor unavailable").font(.caption) }
-                    Text("This measures PHONE orientation, not the conduit angle automatically. Align phone with conduit and verify with a physical angle finder.")
+                    if !motionAvailable { Text(t("Hareket sensörü kullanılamıyor", "Motion sensor unavailable")).font(.caption) }
+                    Text(t("Bu araç telefonun açısını ölçer; borunun açısını otomatik ölçmez. Telefonu boruyla hizalayın ve fiziksel açıölçerle doğrulayın.", "This measures PHONE orientation, not the conduit angle automatically. Align phone with conduit and verify with a physical angle finder."))
                         .font(.caption)
                 }
                 .padding()
