@@ -327,7 +327,7 @@ struct ContentView: View {
                 }
                 let spacing = try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: rise, vertical: degrees, angleDegrees: rollDegrees)
                 let rotation = atan2(degrees, rise) * 180 / Double.pi
-                output = String(format: t("Çapraz kaçıklık: %.2f %@\\nTeorik işaret aralığı: %.2f %@\\nDönüş açısı: %.1f°", "True offset: %.2f %@\\nTheoretical mark spacing: %.2f %@\\nRoll angle: %.1f°"), roll, unitName, spacing, unitName, rotation)
+                output = String(format: t("Çapraz kaçıklık: %.2f %@\nTeorik işaret aralığı: %.2f %@\nDönüş açısı: %.1f°", "True offset: %.2f %@\nTheoretical mark spacing: %.2f %@\nRoll angle: %.1f°"), roll, unitName, spacing, unitName, rotation)
             } else if mode == 5 {
                 let mark = try ExtraBendCalculations.ninetyDegreeStubMark(desiredStub: rise, takeUp: degrees)
                 output = String(format: t("90° büküm işareti: %.2f %@", "90° stub mark: %.2f %@"), mark, unitName)
@@ -337,7 +337,7 @@ struct ContentView: View {
             } else if mode == 7 {
                 let travel = try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: rise, secondLeg: degrees)
                 let rotation = try AdvancedBendCalculations.compoundNinetyRotation(firstLeg: rise, secondLeg: degrees)
-                output = String(format: "Planar diagonal: %.2f\nOrientation: %.1f°\nGeometry only — physical bend marks require verified radius, bender and conduit size.", travel, rotation)
+                output = String(format: t("Düzlemsel köşegen: %.2f %@\nYön açısı: %.1f°\nYalnızca geometri — gerçek büküm işaretleri için yarıçap, bükücü ve boru çapını doğrulayın.", "Planar diagonal: %.2f %@\nOrientation: %.1f°\nGeometry only — physical bend marks require verified radius, bender and conduit size."), travel, unitName, rotation)
             } else {
                 errorMessage = t("Büküm türünü yeniden seçin.", "Unknown calculator mode. Select a mode again.")
             }
