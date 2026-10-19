@@ -112,23 +112,25 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
 }
 
 struct DepthConduitScanView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @StateObject private var scanner = DepthConduitScanner()
     var body: some View {
         VStack(spacing: 16) {
             DepthCameraPreview(session: scanner.session)
                 .frame(height: 310)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-            Text("Depth-assisted conduit width").font(.headline)
+            Text(l("Depth-assisted conduit width")).font(.headline)
             if let diameter = scanner.diameterMM {
                 Text(String(format: "~ %.1f mm", diameter)).font(.largeTitle.monospacedDigit())
             }
-            Text(scanner.message).multilineTextAlignment(.center)
-            Text("Samples: \(scanner.sampleCount)/7")
-            Text("Requires LiDAR scene depth. Not a certified outer-diameter measurement; image contours and depth may misalign.")
+            Text(l(scanner.message)).multilineTextAlignment(.center)
+            Text(l("Samples") + ": \(scanner.sampleCount)/7")
+            Text(l("Requires LiDAR scene depth. Not a certified outer-diameter measurement; image contours and depth may misalign."))
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding()
-        .navigationTitle("Depth Scan")
+        .navigationTitle(l("Depth Scan"))
         .onAppear { scanner.start() }
         .onDisappear { scanner.stop() }
     }
