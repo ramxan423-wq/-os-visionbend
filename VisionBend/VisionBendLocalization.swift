@@ -4,6 +4,14 @@ import Foundation
 /// rather than claiming unsupported languages are fully translated.
 enum VisionBendLocalization {
     static let strings: [String: [String: String]] = [
+        "Stock cutting": ["tr":"Stok kesimi","es":"Corte de material","fr":"Découpe du stock","de":"Materialzuschnitt","ja":"材料切断","ar":"قطع المخزون"],
+        "Cut plan": ["tr":"Kesim planı","es":"Plan de corte","fr":"Plan de coupe","de":"Schnittplan","ja":"切断計画","ar":"خطة القطع"],
+        "Important": ["tr":"Önemli","es":"Importante","fr":"Important","de":"Wichtig","ja":"重要","ar":"مهم"],
+        "Conduit Cut Planner": ["tr":"Boru Kesim Planlayıcı","es":"Planificador de corte de tubos","fr":"Planificateur de coupe de conduits","de":"Rohrzuschnittplaner","ja":"配管切断プランナー","ar":"مخطط قطع الأنابيب"],
+        "Optimize cuts": ["tr":"Kesimi optimize et","es":"Optimizar cortes","fr":"Optimiser les coupes","de":"Zuschnitt optimieren","ja":"切断を最適化","ar":"تحسين القطع"],
+        "Subscriptions": ["tr":"Abonelikler","es":"Suscripciones","fr":"Abonnements","de":"Abonnements","ja":"サブスクリプション","ar":"الاشتراكات"],
+        "Subscribe": ["tr":"Abone ol","es":"Suscribirse","fr":"S’abonner","de":"Abonnieren","ja":"登録する","ar":"اشترك"],
+        "Restore Purchases": ["tr":"Satın alımları geri yükle","es":"Restaurar compras","fr":"Restaurer les achats","de":"Käufe wiederherstellen","ja":"購入を復元","ar":"استعادة المشتريات"],
         "Home": ["tr":"Ana Sayfa","es":"Inicio","fr":"Accueil","de":"Startseite","pt":"Início","it":"Home","ar":"الرئيسية","fa":"خانه","ru":"Главная","hi":"होम","zh-Hans":"首页","ja":"ホーム","ko":"홈","id":"Beranda","da":"Hjem","no":"Hjem","sv":"Hem","nl":"Start","fi":"Koti"],
         "Camera": ["tr":"Kamera","es":"Cámara","fr":"Caméra","de":"Kamera","pt":"Câmera","it":"Fotocamera","ar":"الكاميرا","fa":"دوربین","ru":"Камера","hi":"कैमरा","zh-Hans":"相机","ja":"カメラ","ko":"카메라","id":"Kamera","da":"Kamera","no":"Kamera","sv":"Kamera","nl":"Camera","fi":"Kamera"],
         "Planning": ["tr":"Planlama","es":"Planificación","fr":"Planification","de":"Planung","pt":"Planejamento","it":"Pianificazione","ar":"التخطيط","fa":"برنامه‌ریزی","ru":"Планирование","hi":"योजना","zh-Hans":"规划","ja":"計画","ko":"계획","id":"Perencanaan","da":"Planlægning","no":"Planlegging","sv":"Planering","nl":"Planning","fi":"Suunnittelu"],
