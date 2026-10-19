@@ -23,6 +23,7 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var selectedTab = 0
     private let accent = Color(red: 1, green: 0.45, blue: 0.08)
+    private let bendNamesTR = ["Offset (Kaydırma)", "3 Nokta Eyer", "Tek Açılı Büküm", "Yay Büküm", "Çapraz Offset", "90° Dik Çıkış", "4 Nokta Eyer", "Birleşik 90°"]
     private let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90°"]
     private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { turkish ? tr : en }
@@ -93,20 +94,41 @@ struct ContentView: View {
     private var calculatorPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(t("Boru Bükme Hesaplayıcı", "Conduit Bending Calculator"))
+                Text(t("Bükümünü seç ve hesapla", "Choose a bend and calculate"))
                     .font(.title2.bold())
                 Text(t("1. Büküm türünü seç  2. Ölçüleri gir  3. Sonucu hesapla", "1. Choose bend  2. Enter measurements  3. Calculate"))
                     .font(.subheadline).foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 12) {
                     Text(t("Büküm türü", "Bend type")).font(.headline)
-                    Picker(t("Büküm türü", "Bend type"), selection: $mode) {
-                        ForEach(names.indices, id: \.self) { i in Text(names[i]).tag(i) }
-                    }.pickerStyle(.menu).tint(accent)
-                        .onChange(of: mode) { _ in
-                            output = ""; errorMessage = ""
-                            height = ""
-                            angle = ""
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        ForEach(names.indices, id: \.self) { i in
+                            Button {
+                                mode = i
+                                output = ""
+                                errorMessage = ""
+                                height = ""
+                                angle = ""
+                            } label: {
+                                HStack(spacing: 7) {
+                                    Image(systemName: mode == i ? "checkmark.circle.fill" : "circle")
+                                    Text(t(bendNamesTR[i], names[i]))
+                                        .font(.subheadline.weight(.semibold))
+                                        .lineLimit(2)
+                                        .minimumScaleFactor(0.8)
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 54)
+                                .padding(.horizontal, 10)
+                                .background(mode == i ? accent.opacity(0.17) : Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(mode == i ? accent : .clear, lineWidth: 1.5))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(mode == i ? .isSelected : [])
                         }
+                    }
+                    Text(t("Seçilen işlem: ", "Selected: ") + t(bendNamesTR[mode], names[mode]))
+                        .font(.subheadline.bold())
+                        .foregroundStyle(accent)
                     Text(firstLabel + " (" + unitName + ")").font(.subheadline.bold())
                     TextField(firstLabel, text: $height).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                         .onChange(of: height) { _ in output = ""; errorMessage = "" }
