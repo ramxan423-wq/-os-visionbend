@@ -9,6 +9,8 @@ struct BendMark: Identifiable, Codable {
 }
 
 struct MultiBendPlannerView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @State private var conduitLength = "3000"
     @State private var minStraight = "100"
     @State private var markPosition = "300"
@@ -59,31 +61,31 @@ struct MultiBendPlannerView: View {
     var body: some View {
         Form {
             Section("Conduit (all values in " + unitLabel + ")") {
-                TextField("Conduit length", text: $conduitLength).keyboardType(.decimalPad)
-                TextField("Minimum straight between marks", text: $minStraight).keyboardType(.decimalPad)
+                TextField(l("Conduit length"), text: $conduitLength).keyboardType(.decimalPad)
+                TextField(l("Minimum straight between marks"), text: $minStraight).keyboardType(.decimalPad)
             }
-            Section("Bender geometry") {
+            Section(l("Bender geometry")) {
                 TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
                 TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
             }
-            Section("Shape") {
-                Picker("Shape", selection: $preset) {
+            Section(l("Shape")) {
+                Picker(l("Shape"), selection: $preset) {
                     ForEach(["Custom", "Offset", "90° Stub", "3-Point Saddle", "4-Point Saddle", "Kick", "Rolling Offset", "Back-to-Back 90°", "Compound 90°", "Segmented Arc"], id: \.self) { Text($0) }
                 }
-                TextField("Rise / desired stub", text: $presetRise).keyboardType(.decimalPad)
-                TextField("Angle", text: $presetAngle).keyboardType(.decimalPad)
-                TextField("Run / clearance", text: $presetRun).keyboardType(.decimalPad)
+                TextField(l("Rise / desired stub"), text: $presetRise).keyboardType(.decimalPad)
+                TextField(l("Angle"), text: $presetAngle).keyboardType(.decimalPad)
+                TextField(l("Run / clearance"), text: $presetRun).keyboardType(.decimalPad)
                 if preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") {
-                    TextField("Distance to obstruction", text: $obstructionDistance).keyboardType(.decimalPad)
+                    TextField(l("Distance to obstruction"), text: $obstructionDistance).keyboardType(.decimalPad)
                 }
                 if (preset == "3-Point Saddle" || preset == "4-Point Saddle") && verifiedModelID.hasPrefix("greenlee-555") {
-                    TextField("Manufacturer table Z", text: $saddleZ).keyboardType(.decimalPad)
-                    TextField("Manufacturer table L1", text: $saddleL1).keyboardType(.decimalPad)
-                    TextField("Manufacturer table L2", text: $saddleL2).keyboardType(.decimalPad)
+                    TextField(l("Manufacturer table Z"), text: $saddleZ).keyboardType(.decimalPad)
+                    TextField(l("Manufacturer table L1"), text: $saddleL1).keyboardType(.decimalPad)
+                    TextField(l("Manufacturer table L2"), text: $saddleL2).keyboardType(.decimalPad)
                     if preset == "4-Point Saddle" {
-                        TextField("Straight section length", text: $saddleStraight).keyboardType(.decimalPad)
+                        TextField(l("Straight section length"), text: $saddleStraight).keyboardType(.decimalPad)
                     }
-                    Button("Load Exact Greenlee Table Values") {
+                    Button(l("Load Exact Greenlee Table Values")) {
                         let conversion = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
                         guard let height = Double(presetRise.replacingOccurrences(of: ",", with: ".")),
                               let bendAngle = Double(presetAngle.replacingOccurrences(of: ",", with: ".")),
@@ -97,66 +99,66 @@ struct MultiBendPlannerView: View {
                         saddleTableKey = "\(verifiedModelID)|\(bendAngle)|\(row.heightInches)"
                         message = "Exact Greenlee manufacturer table cell loaded."
                     }
-                    Text("Only exact installed table cells auto-load. No interpolation.").font(.caption)
+                    Text(l("Only exact installed table cells auto-load. No interpolation.")).font(.caption)
                 }
-                Button("Generate Marks") { generatePreset() }
-                Text("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below.")
+                Button(l("Generate Marks")) { generatePreset() }
+                Text(l("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below."))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Add bend") {
-                TextField("Mark position from start", text: $markPosition).keyboardType(.decimalPad)
-                TextField("Bend angle", text: $markAngle).keyboardType(.decimalPad)
-                Picker("Direction", selection: $direction) {
+            Section(l("Add bend")) {
+                TextField(l("Mark position from start"), text: $markPosition).keyboardType(.decimalPad)
+                TextField(l("Bend angle"), text: $markAngle).keyboardType(.decimalPad)
+                Picker(l("Direction"), selection: $direction) {
                     ForEach(directions, id: \.self) { Text($0) }
                 }
-                Button("Add Mark") { addMark() }
+                Button(l("Add Mark")) { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
             }
-            Section("Verified manufacturer profile") {
-                Picker("Bender model", selection: $verifiedModelID) {
-                    Text("Manual / unsupported model").tag("")
+            Section(l("Verified manufacturer profile")) {
+                Picker(l("Bender model"), selection: $verifiedModelID) {
+                    Text(l("Manual / unsupported model")).tag("")
                     ForEach(VerifiedBenderCatalog.entries) { item in
                         Text("\(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)").tag(item.id)
                     }
                 }
                 .onChange(of: verifiedModelID) { id in applyVerifiedModel(id) }
                 if requiresIMCHardware {
-                    Toggle("28008 shoe group and 13856 IMC squeeze roller installed", isOn: $confirmedIMCHardware)
-                    Text("Required together for 1-1/2 and 2 inch IMC. Confirm physical equipment before generating marks.")
+                    Toggle(l("28008 shoe group and 13856 IMC squeeze roller installed"), isOn: $confirmedIMCHardware)
+                    Text(l("Required together for 1-1/2 and 2 inch IMC. Confirm physical equipment before generating marks."))
                         .font(.caption).foregroundStyle(.orange)
                 }
                 if let item = VerifiedBenderCatalog.entries.first(where: { $0.id == verifiedModelID }) {
                     Text("Official profile: \(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)")
                     if let url = URL(string: item.sourceURL) { Link("Manufacturer source", destination: url) }
-                    Text("Only the exact model, conduit and size are covered. Greenlee 555 entries apply only to the listed 28008 rigid shoe and size. Other shoes require separate tables.")
+                    Text(l("Only the exact model, conduit and size are covered. Greenlee 555 entries apply only to the listed 28008 rigid shoe and size. Other shoes require separate tables."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Section("Model-calibrated 90° stub mark") {
-                TextField("Manufacturer", text: $manufacturer)
-                TextField("Exact bender model", text: $benderModel)
-                TextField("Conduit type", text: $conduitType)
-                TextField("Conduit trade size", text: $tradeSize)
-                TextField("Reference mark from manual", text: $referenceMark)
-                TextField("Verified take-up", text: $takeUp).keyboardType(.decimalPad)
-                TextField("Field correction", text: $correction).keyboardType(.decimalPad)
-                TextField("Manual source", text: $manualSource)
-                TextField("Desired stub length", text: $desiredStub).keyboardType(.decimalPad)
-                Button("Add Calibrated Stub Mark") { addCalibratedMark() }
-                Text("Use only exact-model values confirmed in the manufacturer manual. Reference marks differ between benders.")
+            Section(l("Model-calibrated 90° stub mark")) {
+                TextField(l("Manufacturer"), text: $manufacturer)
+                TextField(l("Exact bender model"), text: $benderModel)
+                TextField(l("Conduit type"), text: $conduitType)
+                TextField(l("Conduit trade size"), text: $tradeSize)
+                TextField(l("Reference mark from manual"), text: $referenceMark)
+                TextField(l("Verified take-up"), text: $takeUp).keyboardType(.decimalPad)
+                TextField(l("Field correction"), text: $correction).keyboardType(.decimalPad)
+                TextField(l("Manual source"), text: $manualSource)
+                TextField(l("Desired stub length"), text: $desiredStub).keyboardType(.decimalPad)
+                Button(l("Add Calibrated Stub Mark")) { addCalibratedMark() }
+                Text(l("Use only exact-model values confirmed in the manufacturer manual. Reference marks differ between benders."))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("2D marking diagram (schematic)") {
+            Section(l("2D marking diagram (schematic)")) {
                 BendMarkDiagram(marks: sorted, conduitLength: length)
                     .frame(height: 145)
-                Text("Marks are measured from the starting end. The drawing shows mark positions, not actual post-bend shape.")
+                Text(l("Marks are measured from the starting end. The drawing shows mark positions, not actual post-bend shape."))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("3D preview") {
+            Section(l("3D preview")) {
                 BendShapePreview(marks: sorted, length: length, centerlineRadius: Double(centerlineRadius) ?? 0, conduitOutsideDiameter: Double(outsideDiameter) ?? 0).frame(height: 280)
-                Text("Theoretical shape only. Confirm bend radius and equipment calibration.")
+                Text(l("Theoretical shape only. Confirm bend radius and equipment calibration."))
             }
-            Section("Bend sequence") {
+            Section(l("Bend sequence")) {
                 ForEach(sorted) { mark in
                     HStack {
                         Text(String(format: "%.2f", mark.position)).monospacedDigit()
@@ -171,47 +173,47 @@ struct MultiBendPlannerView: View {
                 Text(valid ? "Mark spacing passes the entered minimum." : "Invalid layout: check lengths, angles and minimum straight spacing.")
                     .foregroundStyle(valid ? .green : .red)
             }
-            Section("Camera marking (experimental)") {
-                Button("Show Marks on Camera") { showARMarks = true }
+            Section(l("Camera marking (experimental)")) {
+                Button(l("Show Marks on Camera")) { showARMarks = true }
                     .disabled(!valid || marks.isEmpty)
-                Text("Tap conduit start and end in AR; verify marker locations manually.")
+                Text(l("Tap conduit start and end in AR; verify marker locations manually."))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Step-by-step bend assistant") {
+            Section(l("Step-by-step bend assistant")) {
                 let steps = sorted
                 if steps.isEmpty {
-                    Text("Generate or add bend marks to begin.")
+                    Text(l("Generate or add bend marks to begin."))
                 } else {
                     Text("Step \(min(guideStep + 1, steps.count)) of \(steps.count)")
                         .font(.headline)
                     let mark = steps[min(guideStep, steps.count - 1)]
                     Text(String(format: "Measure %.2f %@ from the starting end. Mark the conduit. Align the verified bender reference. Bend %.1f degrees %@.", mark.position, unitLabel, mark.angle, mark.direction))
-                    Text("Confirm bender radius, reference marks and springback before bending.")
+                    Text(l("Confirm bender radius, reference marks and springback before bending."))
                         .font(.caption).foregroundStyle(.secondary)
                     HStack {
-                        Button("Previous") { guideStep = max(0, guideStep - 1) }.disabled(guideStep == 0)
+                        Button(l("Previous")) { guideStep = max(0, guideStep - 1) }.disabled(guideStep == 0)
                         Spacer()
-                        Button("Next") { guideStep = min(steps.count - 1, guideStep + 1) }.disabled(guideStep >= steps.count - 1)
+                        Button(l("Next")) { guideStep = min(steps.count - 1, guideStep + 1) }.disabled(guideStep >= steps.count - 1)
                     }
                 }
             }
-            Section("Apple Watch") {
-                Button("Send Marks to Watch") { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
+            Section(l("Apple Watch")) {
+                Button(l("Send Marks to Watch")) { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
                     .disabled(marks.isEmpty || !valid)
                 Text(watchSync.status).font(.caption)
             }
-            Section("Export") {
-                Button("Create PDF marking sheet") { makePDF() }.disabled(!valid || marks.isEmpty)
+            Section(l("Export")) {
+                Button(l("Create PDF marking sheet")) { makePDF() }.disabled(!valid || marks.isEmpty)
                 if let pdfURL {
                     ShareLink(item: pdfURL) { Label("Share PDF", systemImage: "square.and.arrow.up") }
                 }
             }
-            Section("Field verification") {
-                Text("Theoretical centerline marks only. Actual bender arrow/star references, take-up, springback and required tangent lengths depend on the exact bender and conduit. Verify the manufacturer's manual and make a test bend.")
+            Section(l("Field verification")) {
+                Text(l("Theoretical centerline marks only. Actual bender arrow/star references, take-up, springback and required tangent lengths depend on the exact bender and conduit. Verify the manufacturer's manual and make a test bend."))
                     .font(.footnote)
             }
         }
-        .navigationTitle("Multi-Bend Planner")
+        .navigationTitle(l("Multi-Bend Planner"))
         .onChange(of: selectedUnits) { _ in
             if !verifiedModelID.isEmpty { applyVerifiedModel(verifiedModelID) }
         }
