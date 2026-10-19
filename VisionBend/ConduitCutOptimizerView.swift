@@ -10,17 +10,17 @@ struct ConduitCutOptimizerView: View {
     var body: some View {
         Form {
             Section(l("Stock cutting")) {
-                TextField("Stock length (same units)", text: $stock).keyboardType(.decimalPad)
-                TextField("Saw kerf per cut", text: $kerf).keyboardType(.decimalPad)
-                TextField("Required pieces, comma separated", text: $cuts)
+                TextField(l("Stock length (same units)"), text: $stock).keyboardType(.decimalPad)
+                TextField(l("Saw kerf per cut"), text: $kerf).keyboardType(.decimalPad)
+                TextField(l("Required pieces, comma separated"), text: $cuts)
                 Button(l("Optimize cuts")) { calculate() }
             }
             Section(l("Cut plan")) {
-                Text(result.isEmpty ? "Enter piece lengths to generate a first-fit decreasing cut plan." : result)
+                Text(result.isEmpty ? l("Enter piece lengths to generate a first-fit decreasing cut plan.") : result)
                     .font(.system(.body, design: .monospaced))
             }
             Section(l("Important")) {
-                Text("Simple straight-stock cutting plan. Does not calculate bend developed lengths or account for damaged stock.")
+                Text(l("Simple straight-stock cutting plan. Does not calculate bend developed lengths or account for damaged stock."))
             }
         }.navigationTitle(l("Conduit Cut Planner"))
     }
@@ -28,16 +28,16 @@ struct ConduitCutOptimizerView: View {
         func parse(_ s: String) -> Double? { Double(s.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")) }
         guard let length = parse(stock), let blade = parse(kerf),
               length.isFinite, blade.isFinite, length > 0, blade >= 0 else {
-            result = "Invalid stock length or saw kerf."; return
+            result = l("Invalid stock length or saw kerf."); return
         }
         let entries = cuts.split(whereSeparator: { $0 == "," || $0 == ";" || $0 == "\n" })
         let parsed = entries.map { parse(String($0)) }
         guard parsed.allSatisfy({ $0 != nil }) else {
-            result = "Invalid piece length. Check every entered value."; return
+            result = l("Invalid piece length. Check every entered value."); return
         }
         let pieces = parsed.compactMap { $0 }.sorted(by: >)
         guard !pieces.isEmpty, pieces.count <= 500, pieces.allSatisfy({ $0.isFinite && $0 > 0 && $0 + blade <= length }) else {
-            result = "Enter 1–500 positive pieces, each fitting the stock."; return
+            result = l("Enter 1–500 positive pieces, each fitting the stock."); return
         }
         var bins: [[Double]] = []
         var remaining: [Double] = []
@@ -51,8 +51,8 @@ struct ConduitCutOptimizerView: View {
             }
         }
         result = bins.enumerated().map { i, parts in
-            "Stock \(i + 1): " + parts.map { String(format: "%.1f", $0) }.joined(separator: " + ") +
-            String(format: "\nRemaining: %.1f", remaining[i])
-        }.joined(separator: "\n\n") + String(format: "\n\nTotal stock: %d | Total leftover: %.1f", bins.count, remaining.reduce(0, +))
+            l("Stock") + " \(i + 1): " + parts.map { String(format: "%.1f", $0) }.joined(separator: " + ") +
+            String(format: "\n%@: %.1f", l("Remaining"), remaining[i])
+        }.joined(separator: "\n\n") + String(format: "\n\n%@: %d | %@: %.1f", l("Total stock"), bins.count, l("Total leftover"), remaining.reduce(0, +))
     }
 }
