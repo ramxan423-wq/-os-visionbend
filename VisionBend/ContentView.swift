@@ -26,6 +26,7 @@ struct ContentView: View {
     private let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90°"]
     private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { turkish ? tr : en }
+    private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
         switch mode {
@@ -59,6 +60,7 @@ struct ContentView: View {
                 .tabItem { Label(t("Ayarlar", "Settings"), systemImage: "gearshape") }.tag(4)
         }
         .tint(accent)
+        .environment(\.locale, activeLocale)
         .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
         .onAppear { previousUnit = units }
         .onChange(of: units) { newValue in
@@ -100,12 +102,18 @@ struct ContentView: View {
                     Picker(t("Büküm türü", "Bend type"), selection: $mode) {
                         ForEach(names.indices, id: \.self) { i in Text(names[i]).tag(i) }
                     }.pickerStyle(.menu).tint(accent)
-                        .onChange(of: mode) { _ in output = ""; errorMessage = "" }
+                        .onChange(of: mode) { _ in
+                            output = ""; errorMessage = ""
+                            height = ""
+                            angle = ""
+                        }
                     Text(firstLabel + " (" + unitName + ")").font(.subheadline.bold())
                     TextField(firstLabel, text: $height).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                        .onChange(of: height) { _ in output = ""; errorMessage = "" }
                     Text(secondLabel + ([4,5,7].contains(mode) ? " (" + unitName + ")" : ""))
                         .font(.subheadline.bold())
                     TextField(secondLabel, text: $angle).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                        .onChange(of: angle) { _ in output = ""; errorMessage = "" }
                     Button(action: calculate) {
                         Label(t("Hesapla", "Calculate"), systemImage: "equal")
                             .frame(maxWidth: .infinity).padding(.vertical, 8)
