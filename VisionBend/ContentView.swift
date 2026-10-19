@@ -19,6 +19,7 @@ struct ContentView: View {
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
     @AppStorage("visionbend.lastAngle") private var angle = "30"
+    @AppStorage("visionbend.rollingAngle") private var rollingAngle = "30"
     @State private var output = ""
     @State private var errorMessage = ""
     @State private var selectedTab = 0
@@ -182,6 +183,12 @@ struct ContentView: View {
                         .font(.subheadline.bold())
                     TextField(secondLabel, text: $angle).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                         .onChange(of: angle) { _ in output = ""; errorMessage = "" }
+                    if mode == 4 {
+                        Text(t("Büküm açısı (derece)", "Bend angle (degrees)")).font(.subheadline.bold())
+                        TextField(t("Örnek: 30", "Example: 30"), text: $rollingAngle)
+                            .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
+                            .onChange(of: rollingAngle) { _ in output = ""; errorMessage = "" }
+                    }
                     Button(action: calculate) {
                         Label(t("Hesapla", "Calculate"), systemImage: "equal")
                             .frame(maxWidth: .infinity).padding(.vertical, 8)
@@ -311,7 +318,13 @@ struct ContentView: View {
                 output = String(format: t("Merkez hattı yay uzunluğu: %.2f %@", "Centerline arc length: %.2f %@"), arc, unitName)
             } else if mode == 4 {
                 let roll = try MoreBendCalculations.rollingOffset(horizontal: rise, vertical: degrees)
-                output = String(format: t("Gerçek çapraz kaçıklık: %.2f %@", "True rolling offset: %.2f %@"), roll, unitName)
+                guard let rollDegrees = Double(rollingAngle.replacingOccurrences(of: ",", with: ".")), rollDegrees.isFinite else {
+                    errorMessage = t("Geçerli büküm açısı girin.", "Enter a valid bend angle.")
+                    return
+                }
+                let spacing = try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: rise, vertical: degrees, angleDegrees: rollDegrees)
+                let rotation = atan2(degrees, rise) * 180 / Double.pi
+                output = String(format: t("Çapraz kaçıklık: %.2f %@\\nTeorik işaret aralığı: %.2f %@\\nDönüş açısı: %.1f°", "True offset: %.2f %@\\nTheoretical mark spacing: %.2f %@\\nRoll angle: %.1f°"), roll, unitName, spacing, unitName, rotation)
             } else if mode == 5 {
                 let mark = try ExtraBendCalculations.ninetyDegreeStubMark(desiredStub: rise, takeUp: degrees)
                 output = String(format: t("90° büküm işareti: %.2f %@", "90° stub mark: %.2f %@"), mark, unitName)
