@@ -28,7 +28,7 @@ struct ContentView: View {
     private let bendNamesTR = ["Offset (Kaydırma)", "3 Nokta Eyer", "Tek Açılı Büküm", "Yay Büküm", "Çapraz Offset", "90° Dik Çıkış", "4 Nokta Eyer", "Birleşik 90°"]
     private let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90°"]
     private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
-    private func t(_ tr: String, _ en: String) -> String { turkish ? tr : en }
+    private func t(_ tr: String, _ en: String) -> String { VisionBendLocalization.text(en, turkish: tr, language: language) }
     private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
