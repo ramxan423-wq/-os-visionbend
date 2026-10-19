@@ -8,7 +8,7 @@ struct ARMeasureView: View {
     private var tr: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ a: String, _ b: String) -> String { tr ? a : b }
     @State private var points: [SIMD3<Float>] = []
-    @State private var message = t("Ölçmek için izlenen yüzeyde iki noktaya dokunun.", "Tap two tracked surfaces to measure.")
+    @State private var message = ""
     var body: some View {
         VStack(spacing: 12) {
             if ARWorldTrackingConfiguration.isSupported {
@@ -28,6 +28,7 @@ struct ARMeasureView: View {
             }
         }
         .navigationTitle(t("AR Ölçüm", "AR Measurement"))
+        .onAppear { if message.isEmpty { message = t("Ölçmek için izlenen yüzeyde iki noktaya dokunun.", "Tap two tracked surfaces to measure.") } }
         .navigationBarTitleDisplayMode(.inline)
     }
 }
