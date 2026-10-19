@@ -40,10 +40,10 @@ struct LanguageSelectionView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-                Text("Choose your language").font(.title2.bold())
+                Text(VisionBendLocalization.text("Choose your language", language: selected)).font(.title2.bold())
                 Text("Dilini seç • اختر لغتك • Selecciona tu idioma")
                     .font(.subheadline).foregroundStyle(.secondary)
-                TextField("Search language / Dil ara", text: $search)
+                TextField(VisionBendLocalization.text("Search language", language: selected), text: $search)
                     .textFieldStyle(.roundedBorder).padding(.horizontal)
                 List(Array(filtered.enumerated()), id: \.offset) { _, item in
                     Button {
@@ -61,7 +61,7 @@ struct LanguageSelectionView: View {
                     language = selected
                     languageChosen = true
                 } label: {
-                    Text("Continue / Devam Et")
+                    Text(VisionBendLocalization.text("Continue", language: selected))
                         .frame(maxWidth: .infinity).padding(.vertical, 10)
                 }
                 .buttonStyle(.borderedProminent).tint(.orange)
