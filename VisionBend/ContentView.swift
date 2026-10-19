@@ -180,44 +180,44 @@ struct ContentView: View {
         guard let rise = numericInput(height),
               let degrees = numericInput(angle),
               rise.isFinite, degrees.isFinite else {
-            errorMessage = "Enter valid numeric values."
+            errorMessage = t("Geçerli sayısal ölçüler girin.", "Enter valid numeric values.")
             return
         }
         do {
             if mode == 0 {
                 let spacing = try BendCalculations.offsetSpacing(rise: rise, angleDegrees: degrees)
                 let shrink = try BendCalculations.offsetShrink(rise: rise, angleDegrees: degrees)
-                output = String(format: "Mark spacing: %.2f\nTheoretical shrink: %.2f", spacing, shrink)
+                output = String(format: t("İşaretler arası mesafe: %.2f %@\nTeorik kısalma: %.2f %@", "Mark spacing: %.2f %@\nTheoretical shrink: %.2f %@"), spacing, unitName, shrink, unitName)
             } else if mode == 1 {
                 let distance = try BendCalculations.saddleOuterMarkDistance(height: rise, centerAngleDegrees: degrees)
-                output = String(format: "Center to outer mark: %.2f\nOuter bend angle: %.1f°", distance, degrees / 2)
+                output = String(format: t("Merkezden dış işarete: %.2f %@\nDış büküm açısı: %.1f°", "Center to outer mark: %.2f %@\nOuter bend angle: %.1f°"), distance, unitName, degrees / 2)
             } else if mode == 2 {
                 let travel = try MoreBendCalculations.kickTravel(rise: rise, angleDegrees: degrees)
-                output = String(format: "Kick horizontal travel: %.2f", travel)
+                output = String(format: t("Kick yatay ilerleme: %.2f %@", "Kick horizontal travel: %.2f %@"), travel, unitName)
             } else if mode == 3 {
                 let arc = try MoreBendCalculations.arcLength(centerlineRadius: rise, angleDegrees: degrees)
-                output = String(format: "Centerline arc length: %.2f", arc)
+                output = String(format: t("Merkez hattı yay uzunluğu: %.2f %@", "Centerline arc length: %.2f %@"), arc, unitName)
             } else if mode == 4 {
                 let roll = try MoreBendCalculations.rollingOffset(horizontal: rise, vertical: degrees)
-                output = String(format: "True rolling offset: %.2f", roll)
+                output = String(format: t("Gerçek çapraz kaçıklık: %.2f %@", "True rolling offset: %.2f %@"), roll, unitName)
             } else if mode == 5 {
                 let mark = try ExtraBendCalculations.ninetyDegreeStubMark(desiredStub: rise, takeUp: degrees)
-                output = String(format: "Stub mark: %.2f", mark)
+                output = String(format: t("90° büküm işareti: %.2f %@", "90° stub mark: %.2f %@"), mark, unitName)
             } else if mode == 6 {
                 let spacing = try ExtraBendCalculations.fourPointSaddleMarkSpacing(clearance: rise, bendAngleDegrees: degrees)
-                output = String(format: "Each offset mark spacing: %.2f", spacing)
+                output = String(format: t("Her offset için işaret aralığı: %.2f %@", "Each offset mark spacing: %.2f %@"), spacing, unitName)
             } else if mode == 7 {
                 let travel = try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: rise, secondLeg: degrees)
                 let rotation = try AdvancedBendCalculations.compoundNinetyRotation(firstLeg: rise, secondLeg: degrees)
                 output = String(format: "Planar diagonal: %.2f\nOrientation: %.1f°\nGeometry only — physical bend marks require verified radius, bender and conduit size.", travel, rotation)
             } else {
-                errorMessage = "Unknown calculator mode. Select a mode again."
+                errorMessage = t("Büküm türünü yeniden seçin.", "Unknown calculator mode. Select a mode again.")
             }
         } catch {
             errorMessage = error.localizedDescription
         }
         if units == 2, !output.isEmpty {
-            output += "\nFractional inches (first value): " + AdvancedBendCalculations.fractionalInches(rise)
+            output += "\n" + t("İlk ölçü (kesirli inç): ", "First value (fractional inches): ") + AdvancedBendCalculations.fractionalInches(rise)
         }
     }
 }
