@@ -130,16 +130,16 @@ struct ContentView: View {
     private var cameraPage: some View {
         List {
             Section(t("Ölçüm araçları", "Measurement tools")) {
-                Label(t("Kamera terazisi", "Camera level"), systemImage: "camera.viewfinder")
-                    .onTapGesture { showCamera = true }
-                Label(t("Boruyu fotoğrafla tara", "Conduit photo scan"), systemImage: "camera.metering.center.weighted")
-                    .onTapGesture { showConduitScan = true }
-                Label(t("Derinlik destekli tarama (LiDAR)", "Depth-assisted scan (LiDAR)"), systemImage: "viewfinder")
-                    .onTapGesture { showDepthScan = true }
-                Label(t("AR mesafe ölçümü", "AR measure"), systemImage: "ruler")
-                    .onTapGesture { showAR = true }
+                Button { showCamera = true } label: { Label(t("Kamera terazisi", "Camera level"), systemImage: "camera.viewfinder") }
+                Button { showConduitScan = true } label: { Label(t("Boruyu fotoğrafla tara", "Conduit photo scan"), systemImage: "camera.metering.center.weighted") }
+                Button { showDepthScan = true } label: { Label(t("Derinlik destekli tarama (LiDAR)", "Depth-assisted scan (LiDAR)"), systemImage: "viewfinder") }
+                Button { showAR = true } label: { Label(t("AR mesafe ölçümü", "AR measure"), systemImage: "ruler") }
             }
-        }
+            Section {
+                Text(t("LiDAR ölçümü yalnızca destekleyen cihazlarda çalışır. Fotoğrafla çap tahmini için aynı düzlemde ölçüsü bilinen bir referans gerekir. AR işaretlerini gerçek ölçüyle doğrulayın.", "LiDAR requires a compatible device. Photo diameter estimates need a known-size reference in the same plane. Verify AR marks with physical measurements."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+        }.tint(accent)
     }
     private var planningPage: some View {
         List {
