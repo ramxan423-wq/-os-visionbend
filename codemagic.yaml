@@ -44,6 +44,10 @@ workflows:
       - name: Generate Xcode project
         script: |
           xcodegen generate
+      - name: Increment iOS build number
+        script: |
+          cd "$CM_BUILD_DIR"
+          agvtool new-version -all "$PROJECT_BUILD_NUMBER"
       - name: Apply App Store signing profile
         script: |
           xcode-project use-profiles
