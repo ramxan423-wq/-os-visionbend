@@ -38,7 +38,19 @@ jobs:
           security create-keychain -p temp-password "$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$KEYCHAIN"
           security unlock-keychain -p temp-password "$KEYCHAIN"
-          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          # Verify the actual P12/password pair before calling macOS Keychain.
+          # This avoids an ambiguous Keychain MAC verification error.
+          if ! openssl pkcs12 -in "$RUNNER_TEMP/certificate.p12" -info -noout -passin env:P12_PASSWORD > /dev/null 2>&1; then
+            echo "::error::The P12 file and IOS_DISTRIBUTION_P12_PASSWORD do not match. Verify the exact export password and re-copy the P12 Base64."
+            exit 1
+          fi
+          # Repackage with legacy-compatible PKCS12 encryption for macOS import.
+          TEMP_PEM="$RUNNER_TEMP/signing.pem"
+          trap 'rm -f "$TEMP_PEM"' EXIT
+          openssl pkcs12 -in "$RUNNER_TEMP/certificate.p12" -nodes -passin env:P12_PASSWORD -out "$TEMP_PEM"
+          openssl pkcs12 -export -legacy -in "$TEMP_PEM" -out "$RUNNER_TEMP/compatible.p12" -passout env:P12_PASSWORD
+          rm -f "$TEMP_PEM"
+          security import "$RUNNER_TEMP/compatible.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k temp-password "$KEYCHAIN"
           security list-keychains -d user -s "$KEYCHAIN"
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
