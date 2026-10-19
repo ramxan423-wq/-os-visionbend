@@ -11,7 +11,7 @@ workflows:
           brew install xcodegen
       - name: Generate VisionBend app icon
         script: |
-          swift tools/generate_app_icon.swift
+          python3 tools/generate_app_icon.py
       - name: Generate Xcode project
         script: |
           xcodegen generate
@@ -46,7 +46,7 @@ workflows:
           brew install xcodegen
       - name: Generate VisionBend app icon
         script: |
-          swift tools/generate_app_icon.swift
+          python3 tools/generate_app_icon.py
       - name: Generate Xcode project
         script: |
           xcodegen generate
