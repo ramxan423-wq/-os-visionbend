@@ -15,6 +15,19 @@ final class MoreBendCalculationsTests: XCTestCase {
         XCTAssertEqual(try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: 3, vertical: 4, angleDegrees: 30), 10, accuracy: 0.0001)
     }
 
+    func testRollingOffsetFieldGeometry() throws {
+        XCTAssertEqual(try MoreBendCalculations.rollingOffset(horizontal: 300, vertical: 400), 500, accuracy: 0.00001)
+        XCTAssertEqual(try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: 300, vertical: 400, angleDegrees: 30), 1000, accuracy: 0.00001)
+        XCTAssertThrowsError(try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: 300, vertical: 400, angleDegrees: 0))
+        XCTAssertThrowsError(try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: 300, vertical: 400, angleDegrees: 90))
+    }
+
+    func testExtremeAndNonFiniteInputs() {
+        XCTAssertThrowsError(try MoreBendCalculations.arcLength(centerlineRadius: .infinity, angleDegrees: 90))
+        XCTAssertThrowsError(try MoreBendCalculations.rollingOffset(horizontal: .nan, vertical: 10))
+        XCTAssertThrowsError(try MoreBendCalculations.kickTravel(rise: 0, angleDegrees: 45))
+    }
+
     func testInvalid() {
         XCTAssertThrowsError(try MoreBendCalculations.kickTravel(rise: 10, angleDegrees: 90))
         XCTAssertThrowsError(try MoreBendCalculations.arcLength(centerlineRadius: 0, angleDegrees: 90))
