@@ -4,8 +4,11 @@ import ARKit
 
 /// Measures between two user-selected world points. Requires a supported ARKit device.
 struct ARMeasureView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private var tr: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
+    private func t(_ a: String, _ b: String) -> String { tr ? a : b }
     @State private var points: [SIMD3<Float>] = []
-    @State private var message = "Tap two tracked surfaces to measure."
+    @State private var message = t("Ölçmek için izlenen yüzeyde iki noktaya dokunun.", "Tap two tracked surfaces to measure.")
     var body: some View {
         VStack(spacing: 12) {
             if ARWorldTrackingConfiguration.isSupported {
@@ -16,15 +19,15 @@ struct ARMeasureView: View {
                     }
                 Text(message).font(.footnote)
                 if points.count == 2 {
-                    Text(String(format: "Distance: %.1f mm", simd_distance(points[0], points[1]) * 1000))
+                    Text(String(format: t("Mesafe: %.1f mm", "Distance: %.1f mm"), simd_distance(points[0], points[1]) * 1000))
                         .font(.title3.monospacedDigit())
                 }
-                Button("Reset measurement") { points = []; message = "Tap two tracked surfaces to measure." }
+                Button(t("Ölçümü Sıfırla", "Reset measurement")) { points = []; message = t("Ölçmek için izlenen yüzeyde iki noktaya dokunun.", "Tap two tracked surfaces to measure.") }
             } else {
                 ContentUnavailableAR()
             }
         }
-        .navigationTitle("AR Measurement")
+        .navigationTitle(t("AR Ölçüm", "AR Measurement"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
