@@ -3,6 +3,8 @@ import Vision
 import AVFoundation
 
 struct ConduitScanView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @State private var image: UIImage?
     @State private var result = "Choose a conduit photo to inspect."
     @State private var showPicker = false
@@ -16,8 +18,8 @@ struct ConduitScanView: View {
             if let image {
                 Image(uiImage: image).resizable().scaledToFit()
             }
-            Button("Scan conduit photo") { showPicker = true }
-            Toggle("Use same-plane size reference", isOn: $useReference)
+            Button(l("Scan conduit photo")) { showPicker = true }
+            Toggle(l("Use same-plane size reference"), isOn: $useReference)
             TextField("Reference object actual width (mm)", text: $referenceWidth).keyboardType(.decimalPad)
             TextField("Reference object width in photo (pixels)", text: $referencePixels).keyboardType(.decimalPad)
             if let measuredPixels,
@@ -36,7 +38,7 @@ struct ConduitScanView: View {
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding()
-        .navigationTitle("Conduit Scan")
+        .navigationTitle(l("Conduit Scan"))
         .sheet(isPresented: $showPicker) {
             ConduitImagePicker { picked in
                 image = picked
