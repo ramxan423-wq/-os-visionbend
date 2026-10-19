@@ -1,0 +1,48 @@
+name: Upload existing VisionBend IPA to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'GitHub release tag containing VisionBend.ipa (example: visionbend-ipa-1)'
+        required: true
+        default: 'visionbend-ipa-1'
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Verify App Store Connect credentials
+        env:
+          ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          if [ -z "$ISSUER_ID" ] || [ -z "$KEY_ID" ] || [ -z "$PRIVATE_KEY" ]; then
+            echo "::error::Missing APPSTORE_ISSUER_ID, APPSTORE_API_KEY_ID or APPSTORE_API_PRIVATE_KEY. Configure GitHub Actions variables/secrets first."
+            exit 1
+          fi
+
+      - name: Download existing signed IPA from GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p upload
+          gh release download "$RELEASE_TAG" --pattern 'VisionBend.ipa' --dir upload
+          test -s upload/VisionBend.ipa || { echo "::error::VisionBend.ipa not found in release $RELEASE_TAG"; exit 1; }
+          unzip -t upload/VisionBend.ipa >/dev/null
+
+      - name: Upload to Apple TestFlight
+        uses: apple-actions/upload-testflight-build@v5
+        with:
+          app-path: upload/VisionBend.ipa
+          issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          wait-for-processing: 'false'
