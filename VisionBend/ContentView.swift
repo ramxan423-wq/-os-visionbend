@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var history = BendHistory()
     @AppStorage("visionbend.appearance") private var appearance = 1
     @AppStorage("visionbend.language") private var language = "system"
+    @AppStorage("visionbend.languageChosen") private var languageChosen = false
     @AppStorage("visionbend.units") private var units = 0
     @State private var previousUnit = 0
     @State private var showHistory = false
@@ -242,11 +243,13 @@ struct ContentView: View {
     private var settingsPage: some View {
         List {
             Section(t("Uygulama dili", "App language")) {
-                Picker(t("Dil", "Language"), selection: $language) {
-                    Text(t("Telefon dili", "Device language")).tag("system")
-                    Text("Türkçe").tag("tr")
-                    Text("English").tag("en")
+                Button {
+                    languageChosen = false
+                } label: {
+                    Label(VisionBendLanguages.name(for: language), systemImage: "globe")
                 }
+                Text(t("Dili değiştirmek için dokunun.", "Tap to change language."))
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section(t("Görünüm", "Appearance")) {
                 Picker(t("Tema", "Theme"), selection: $appearance) {
