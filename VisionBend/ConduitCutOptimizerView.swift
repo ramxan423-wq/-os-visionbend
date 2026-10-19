@@ -1,26 +1,28 @@
 import SwiftUI
 
 struct ConduitCutOptimizerView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @State private var stock = "3000"
     @State private var kerf = "3"
     @State private var cuts = "850, 850, 420, 300"
     @State private var result = ""
     var body: some View {
         Form {
-            Section("Stock cutting") {
+            Section(l("Stock cutting")) {
                 TextField("Stock length (same units)", text: $stock).keyboardType(.decimalPad)
                 TextField("Saw kerf per cut", text: $kerf).keyboardType(.decimalPad)
                 TextField("Required pieces, comma separated", text: $cuts)
-                Button("Optimize cuts") { calculate() }
+                Button(l("Optimize cuts")) { calculate() }
             }
-            Section("Cut plan") {
+            Section(l("Cut plan")) {
                 Text(result.isEmpty ? "Enter piece lengths to generate a first-fit decreasing cut plan." : result)
                     .font(.system(.body, design: .monospaced))
             }
-            Section("Important") {
+            Section(l("Important")) {
                 Text("Simple straight-stock cutting plan. Does not calculate bend developed lengths or account for damaged stock.")
             }
-        }.navigationTitle("Conduit Cut Planner")
+        }.navigationTitle(l("Conduit Cut Planner"))
     }
     private func calculate() {
         func parse(_ s: String) -> Double? { Double(s.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")) }
