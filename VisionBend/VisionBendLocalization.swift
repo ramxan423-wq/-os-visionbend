@@ -4,6 +4,14 @@ import Foundation
 /// rather than claiming unsupported languages are fully translated.
 enum VisionBendLocalization {
     static let strings: [String: [String: String]] = [
+        "Conduit Scan": ["tr":"Boru Taraması","es":"Escaneo de tubo","fr":"Scan du conduit","de":"Rohrscan","ja":"配管スキャン","ar":"مسح الأنابيب"],
+        "Scan conduit photo": ["tr":"Boru fotoğrafını tara","es":"Escanear foto del tubo","fr":"Analyser la photo du conduit","de":"Rohrfoto scannen","ja":"配管写真をスキャン","ar":"مسح صورة الأنبوب"],
+        "Use same-plane size reference": ["tr":"Aynı düzlemde ölçü referansı kullan","es":"Usar referencia en el mismo plano","fr":"Utiliser une référence sur le même plan","de":"Größenreferenz in gleicher Ebene verwenden","ja":"同一平面の基準サイズを使用","ar":"استخدم مرجع قياس على نفس المستوى"],
+        "No Saved Bends": ["tr":"Kayıtlı büküm yok","es":"No hay curvas guardadas","fr":"Aucun cintrage enregistré","de":"Keine Biegungen gespeichert","ja":"保存した曲げなし","ar":"لا توجد ثنيات محفوظة"],
+        "Save a calculation to see it here.": ["tr":"Burada görmek için bir hesaplama kaydedin.","es":"Guarda un cálculo para verlo aquí.","fr":"Enregistrez un calcul pour le voir ici.","de":"Speichern Sie eine Berechnung, um sie hier zu sehen.","ja":"ここに表示するには計算を保存してください。","ar":"احفظ حسابًا لعرضه هنا."],
+        "Saved Bends": ["tr":"Kaydedilen Bükümler","es":"Curvas guardadas","fr":"Cintrages enregistrés","de":"Gespeicherte Biegungen","ja":"保存した曲げ","ar":"الثنيات المحفوظة"],
+        "Export / Share": ["tr":"Dışa aktar / Paylaş","es":"Exportar / Compartir","fr":"Exporter / Partager","de":"Exportieren / Teilen","ja":"書き出す / 共有","ar":"تصدير / مشاركة"],
+        "Edit project details": ["tr":"Proje ayrıntılarını düzenle","es":"Editar detalles del proyecto","fr":"Modifier les détails du projet","de":"Projektdetails bearbeiten","ja":"プロジェクト詳細を編集","ar":"تعديل تفاصيل المشروع"],
         "Stock cutting": ["tr":"Stok kesimi","es":"Corte de material","fr":"Découpe du stock","de":"Materialzuschnitt","ja":"材料切断","ar":"قطع المخزون"],
         "Cut plan": ["tr":"Kesim planı","es":"Plan de corte","fr":"Plan de coupe","de":"Schnittplan","ja":"切断計画","ar":"خطة القطع"],
         "Important": ["tr":"Önemli","es":"Importante","fr":"Important","de":"Wichtig","ja":"重要","ar":"مهم"],
