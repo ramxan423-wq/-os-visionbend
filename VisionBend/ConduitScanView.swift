@@ -20,21 +20,21 @@ struct ConduitScanView: View {
             }
             Button(l("Scan conduit photo")) { showPicker = true }
             Toggle(l("Use same-plane size reference"), isOn: $useReference)
-            TextField("Reference object actual width (mm)", text: $referenceWidth).keyboardType(.decimalPad)
-            TextField("Reference object width in photo (pixels)", text: $referencePixels).keyboardType(.decimalPad)
+            TextField(l("Reference object actual width (mm)"), text: $referenceWidth).keyboardType(.decimalPad)
+            TextField(l("Reference object width in photo (pixels)"), text: $referencePixels).keyboardType(.decimalPad)
             if let measuredPixels,
                let width = Double(referenceWidth.replacingOccurrences(of: ",", with: ".")),
                let pixels = Double(referencePixels.replacingOccurrences(of: ",", with: ".")),
                width > 0, pixels > 0 {
                 if let estimate = ConduitDiameterMath.calibratedDiameter(conduitPixels: measuredPixels, referencePixels: pixels, referenceMillimeters: width) {
-                    Text(String(format: "Estimated width: %.1f mm (± %.1f mm pixel error only)", estimate.millimeters, estimate.uncertaintyMillimeters))
+                    Text(String(format: l("Estimated width: %.1f mm (± %.1f mm pixel error only)"), estimate.millimeters, estimate.uncertaintyMillimeters))
                         .font(.headline)
-                    Text("This uncertainty excludes perspective and wrong-edge detection. Not a certified diameter.")
+                    Text(l("This uncertainty excludes perspective and wrong-edge detection. Not a certified diameter."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Text(result).font(.callout)
-            Text("Experimental estimate requires a known-size reference in the same image plane. Contour thickness is not a verified outer diameter. Confirm with calipers.")
+            Text(l(result)).font(.callout)
+            Text(l("Experimental estimate requires a known-size reference in the same image plane. Contour thickness is not a verified outer diameter. Confirm with calipers."))
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding()
