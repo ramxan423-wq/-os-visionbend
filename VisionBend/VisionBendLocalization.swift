@@ -4,6 +4,23 @@ import Foundation
 /// rather than claiming unsupported languages are fully translated.
 enum VisionBendLocalization {
     static let strings: [String: [String: String]] = [
+        "Stock length (same units)": ["tr":"Stok uzunluğu (aynı birim)","es":"Longitud del material","fr":"Longueur du stock","de":"Materiallänge","ja":"材料の長さ"],
+        "Saw kerf per cut": ["tr":"Kesim başına testere payı","es":"Ancho de corte de sierra","fr":"Trait de scie par coupe","de":"Schnittfuge je Schnitt","ja":"切断ごとの刃幅"],
+        "Required pieces, comma separated": ["tr":"Gerekli parçalar (virgülle ayırın)","es":"Piezas necesarias, separadas por comas","fr":"Pièces nécessaires, séparées par des virgules","de":"Benötigte Stücke, kommagetrennt","ja":"必要な部材（カンマ区切り）"],
+        "Invalid stock length or saw kerf.": ["tr":"Stok uzunluğu veya testere payı geçersiz.","es":"Longitud o ancho de corte no válido.","fr":"Longueur ou trait de scie invalide.","de":"Ungültige Materiallänge oder Schnittfuge.","ja":"材料長または刃幅が無効です。"],
+        "Invalid piece length. Check every entered value.": ["tr":"Parça uzunluğu geçersiz. Tüm değerleri kontrol edin.","es":"Longitud de pieza no válida.","fr":"Longueur de pièce invalide.","de":"Ungültige Stücklänge.","ja":"部材の長さが無効です。"],
+        "Enter 1–500 positive pieces, each fitting the stock.": ["tr":"Stoka sığan 1–500 pozitif parça girin.","es":"Introduzca entre 1 y 500 piezas válidas.","fr":"Saisissez de 1 à 500 pièces valides.","de":"1–500 passende Stücke eingeben.","ja":"材料に収まる1～500個の部材を入力してください。"],
+        "Stock": ["tr":"Stok","es":"Material","fr":"Stock","de":"Material","ja":"材料"],
+        "Remaining": ["tr":"Kalan","es":"Restante","fr":"Restant","de":"Rest","ja":"残り"],
+        "Total stock": ["tr":"Toplam stok","es":"Material total","fr":"Stock total","de":"Gesamtmaterial","ja":"材料総数"],
+        "Total leftover": ["tr":"Toplam artık","es":"Sobrante total","fr":"Chute totale","de":"Gesamtrest","ja":"端材合計"],
+        "Reference object actual width (mm)": ["tr":"Referans nesnenin gerçek genişliği (mm)","es":"Anchura real de referencia (mm)","fr":"Largeur réelle de référence (mm)","de":"Tatsächliche Referenzbreite (mm)","ja":"基準物の実際の幅（mm）"],
+        "Reference object width in photo (pixels)": ["tr":"Fotoğraftaki referans genişliği (piksel)","es":"Ancho de referencia en píxeles","fr":"Largeur de référence en pixels","de":"Referenzbreite in Pixeln","ja":"写真内の基準幅（ピクセル）"],
+        "Estimated width: %.1f mm (± %.1f mm pixel error only)": ["tr":"Tahmini genişlik: %.1f mm (yalnızca piksel hatası ± %.1f mm)","es":"Ancho estimado: %.1f mm (error de píxel ± %.1f mm)","fr":"Largeur estimée : %.1f mm (erreur de pixel ± %.1f mm)","de":"Geschätzte Breite: %.1f mm (Pixelfehler ± %.1f mm)","ja":"推定幅: %.1f mm（画素誤差 ± %.1f mm）"],
+        "This uncertainty excludes perspective and wrong-edge detection. Not a certified diameter.": ["tr":"Bu belirsizlik perspektif ve yanlış kenar tespitini kapsamaz. Onaylı çap ölçümü değildir.","es":"No incluye errores de perspectiva o bordes. No es una medida certificada.","fr":"N'inclut pas les erreurs de perspective ou de contour. Mesure non certifiée.","de":"Perspektiv- und Kantenerkennungsfehler nicht enthalten. Keine zertifizierte Messung.","ja":"遠近法や輪郭誤認の誤差は含みません。認証測定ではありません。"],
+        "Choose a conduit photo to inspect.": ["tr":"İncelemek için boru fotoğrafı seçin.","es":"Elija una foto del tubo.","fr":"Choisissez une photo du conduit.","de":"Rohrfoto auswählen.","ja":"配管の写真を選択してください。"],
+        "Image unavailable": ["tr":"Görüntü kullanılamıyor","es":"Imagen no disponible","fr":"Image indisponible","de":"Bild nicht verfügbar","ja":"画像を利用できません"],
+        "No elongated object detected.": ["tr":"Uzun boru benzeri nesne bulunamadı.","es":"No se detectó ningún objeto alargado.","fr":"Aucun objet allongé détecté.","de":"Kein längliches Objekt erkannt.","ja":"細長い物体が検出されませんでした。"],
         "Bender geometry": ["tr":"Bükücü geometrisi","es":"Geometría de dobladora","fr":"Géométrie de la cintreuse","de":"Biegegeometrie","ja":"ベンダーの形状","ar":"ثوابت آلة الثني"],
         "Shape": ["tr":"Şekil","es":"Forma","fr":"Forme","de":"Form","ja":"形状","ar":"الشكل"],
         "Add bend": ["tr":"Büküm ekle","es":"Añadir curva","fr":"Ajouter un cintrage","de":"Biegung hinzufügen","ja":"曲げを追加","ar":"إضافة ثني"],
