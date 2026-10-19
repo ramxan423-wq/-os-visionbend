@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var history = BendHistory()
-    @AppStorage("visionbend.appearance") private var appearance = 0
+    @AppStorage("visionbend.appearance") private var appearance = 1
     @AppStorage("visionbend.language") private var language = "system"
     @AppStorage("visionbend.units") private var units = 0
     @State private var previousUnit = 0
@@ -172,7 +172,14 @@ struct ContentView: View {
                     Text("English").tag("en")
                 }
             }
-            Button { showSettings = true } label: { Label(t("Tema ve ölçü birimleri", "Appearance & units"), systemImage: "slider.horizontal.3") }
+            Section(t("Görünüm", "Appearance")) {
+                Picker(t("Tema", "Theme"), selection: $appearance) {
+                    Text(t("Beyaz", "White")).tag(1)
+                    Text(t("Siyah", "Black")).tag(2)
+                    Text(t("Sistem", "System")).tag(0)
+                }.pickerStyle(.segmented)
+            }
+            Button { showSettings = true } label: { Label(t("Ölçü birimleri", "Units"), systemImage: "slider.horizontal.3") }
             Button { showReference = true } label: { Label(t("Bükücü kataloğu", "Bender catalog"), systemImage: "book") }
             Button { showPremium = true } label: { Label("Premium", systemImage: "star") }
         }.tint(accent)
