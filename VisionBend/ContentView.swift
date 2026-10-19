@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var history = BendHistory()
     @AppStorage("visionbend.appearance") private var appearance = 0
+    @AppStorage("visionbend.language") private var language = "system"
     @AppStorage("visionbend.units") private var units = 0
     @State private var previousUnit = 0
     @State private var showHistory = false
@@ -23,7 +24,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     private let accent = Color(red: 1, green: 0.45, blue: 0.08)
     private let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90°"]
-    private var turkish: Bool { Locale.current.language.languageCode?.identifier == "tr" }
+    private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { turkish ? tr : en }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
@@ -156,6 +157,13 @@ struct ContentView: View {
     }
     private var settingsPage: some View {
         List {
+            Section(t("Uygulama dili", "App language")) {
+                Picker(t("Dil", "Language"), selection: $language) {
+                    Text(t("Telefon dili", "Device language")).tag("system")
+                    Text("Türkçe").tag("tr")
+                    Text("English").tag("en")
+                }
+            }
             Button { showSettings = true } label: { Label(t("Tema ve ölçü birimleri", "Appearance & units"), systemImage: "slider.horizontal.3") }
             Button { showReference = true } label: { Label(t("Bükücü kataloğu", "Bender catalog"), systemImage: "book") }
             Button { showPremium = true } label: { Label("Premium", systemImage: "star") }
