@@ -49,8 +49,8 @@ struct ContentView: View {
     }
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack { calculatorPage.navigationTitle("VisionBend") }
-                .tabItem { Label(t("Büküm", "Bends"), systemImage: "angle") }.tag(0)
+            NavigationStack { homePage.navigationTitle("VisionBend").navigationDestination(for: Int.self) { index in calculatorPage.onAppear { if mode != index { mode = index; height = ""; angle = ""; output = ""; errorMessage = "" } }.navigationTitle(t(bendNamesTR[index], names[index])).navigationBarTitleDisplayMode(.inline) } }
+                .tabItem { Label(t("Ana Sayfa", "Home"), systemImage: "house.fill") }.tag(0)
             NavigationStack { cameraPage.navigationTitle(t("Kamera", "Camera")) }
                 .tabItem { Label(t("Kamera", "Camera"), systemImage: "camera") }.tag(1)
             NavigationStack { planningPage.navigationTitle(t("Planlama", "Planning")) }
@@ -90,6 +90,52 @@ struct ContentView: View {
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(t("Bitti", "Done")) { showCamera = false } } }
             }
         }
+    }
+    private var homePage: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("VisionBend Pro").font(.largeTitle.bold())
+                    Text(t("Boru bükümünü üç adımda hesapla: işlem seç, ölçü gir, sonucu gör.", "Calculate bends in three steps: select, enter measurements, view result."))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                Text(t("Büküm Hesaplamaları", "Bend Calculators")).font(.title3.bold())
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    ForEach(names.indices, id: \.self) { i in
+                        NavigationLink(value: i) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Image(systemName: ["arrow.up.right", "point.3.connected.trianglepath.dotted", "arrow.turn.up.right", "circle.dotted", "arrow.up.forward", "arrow.turn.up.right", "square.dashed", "angle"][i])
+                                    .font(.title2).foregroundStyle(accent)
+                                Text(t(bendNamesTR[i], names[i]))
+                                    .font(.subheadline.bold()).foregroundStyle(.primary)
+                                    .multilineTextAlignment(.leading)
+                                Spacer(minLength: 0)
+                                Image(systemName: "arrow.right").foregroundStyle(accent)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 115, alignment: .leading)
+                            .padding(14)
+                            .background(Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Text(t("Diğer Araçlar", "Other Tools")).font(.title3.bold())
+                Button { selectedTab = 1 } label: {
+                    Label(t("Kamera, AR ve LiDAR Ölçüm", "Camera, AR and LiDAR"), systemImage: "camera.viewfinder")
+                        .frame(maxWidth: .infinity, alignment: .leading).padding()
+                }
+                .background(Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
+                Button { selectedTab = 2 } label: {
+                    Label(t("Çoklu Büküm ve Kesim Planlama", "Multi-bend and Cut Planning"), systemImage: "ruler")
+                        .frame(maxWidth: .infinity, alignment: .leading).padding()
+                }
+                .background(Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
+                Text(t("Ölçüleri sahada uygulamadan önce gerçek bükücü ile doğrulayın.", "Verify measurements with the physical bender before field use."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            .padding()
+        }
+        .tint(accent)
     }
     private var calculatorPage: some View {
         ScrollView {
@@ -145,6 +191,7 @@ struct ContentView: View {
                 if !output.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(t("Hesaplama sonucu", "Calculation result")).font(.headline)
+                        bendDiagram
                         Text(output).font(.body.monospacedDigit()).textSelection(.enabled)
                         Button(t("Hesaplamayı Kaydet", "Save Calculation")) {
                             guard let a = numericInput(height), let b = numericInput(angle), names.indices.contains(mode) else { return }
@@ -205,6 +252,34 @@ struct ContentView: View {
             Button { showReference = true } label: { Label(t("Bükücü kataloğu", "Bender catalog"), systemImage: "book") }
             Button { showPremium = true } label: { Label("Premium", systemImage: "star") }
         }.tint(accent)
+    }
+
+    private var bendDiagram: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(t("Şematik büküm görünümü (ölçekli değildir)", "Schematic bend preview (not to scale)"))
+                .font(.caption).foregroundStyle(.secondary)
+            GeometryReader { geometry in
+                Path { path in
+                    let w = geometry.size.width
+                    let h = geometry.size.height
+                    path.move(to: CGPoint(x: 12, y: h * 0.72))
+                    if mode == 3 {
+                        path.addQuadCurve(to: CGPoint(x: w - 12, y: h * 0.3), control: CGPoint(x: w * 0.5, y: -h * 0.1))
+                    } else if mode == 5 || mode == 7 {
+                        path.addLine(to: CGPoint(x: w * 0.55, y: h * 0.72))
+                        path.addLine(to: CGPoint(x: w * 0.55, y: h * 0.15))
+                    } else {
+                        path.addLine(to: CGPoint(x: w * 0.3, y: h * 0.72))
+                        path.addLine(to: CGPoint(x: w * 0.53, y: h * 0.28))
+                        path.addLine(to: CGPoint(x: w - 12, y: h * 0.28))
+                    }
+                }
+                .stroke(accent, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+            }
+            .frame(height: 110)
+            .padding(10)
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 
     private func numericInput(_ value: String) -> Double? {
