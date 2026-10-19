@@ -13,6 +13,8 @@ struct BenderProfile: Codable, Identifiable {
 }
 
 struct BenderReferenceView: View {
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @AppStorage("visionbend.benderProfiles.v1") private var storedProfiles = Data()
     @State private var profiles: [BenderProfile] = []
     @State private var manufacturer = "Greenlee"
@@ -29,7 +31,7 @@ struct BenderReferenceView: View {
 
     var body: some View {
         Form {
-            Section("Manufacturer-verified starter catalog") {
+            Section(l("Manufacturer-verified starter catalog")) {
                 ForEach(VerifiedBenderCatalog.entries) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.brand + " " + item.model).font(.headline)
@@ -43,23 +45,23 @@ struct BenderReferenceView: View {
                 Text("Only the listed model and size combinations are verified. Other models require exact manufacturer documentation.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Bender and conduit") {
-                Picker("Manufacturer", selection: $manufacturer) {
+            Section(l("Bender and conduit")) {
+                Picker(l("Manufacturer"), selection: $manufacturer) {
                     ForEach(brands, id: \.self) { Text($0) }
                 }
-                TextField("Exact model / part number", text: $model)
-                Picker("Conduit type", selection: $conduitType) {
+                TextField(l("Exact model / part number"), text: $model)
+                Picker(l("Conduit type"), selection: $conduitType) {
                     ForEach(conduitTypes, id: \.self) { Text($0) }
                 }
-                TextField("Conduit trade size", text: $conduitSize)
-                TextField("Manual take-up (selected units)", text: $takeUp).keyboardType(.decimalPad)
-                TextField("Centerline radius (selected units)", text: $radius).keyboardType(.decimalPad)
-                TextField("Manufacturer manual / page / URL", text: $source)
-                TextField("Calibration and field notes", text: $notes)
-                Button("Save Bender Profile") { saveProfile() }
+                TextField(l("Conduit trade size"), text: $conduitSize)
+                TextField(l("Manual take-up (selected units)"), text: $takeUp).keyboardType(.decimalPad)
+                TextField(l("Centerline radius (selected units)"), text: $radius).keyboardType(.decimalPad)
+                TextField(l("Manufacturer manual / page / URL"), text: $source)
+                TextField(l("Calibration and field notes"), text: $notes)
+                Button(l("Save Bender Profile")) { saveProfile() }
                 if !message.isEmpty { Text(message).font(.caption) }
             }
-            Section("Saved bender profiles") {
+            Section(l("Saved bender profiles")) {
                 if profiles.isEmpty { Text("No saved profiles").foregroundStyle(.secondary) }
                 ForEach(profiles) { item in
                     VStack(alignment: .leading, spacing: 4) {
@@ -71,12 +73,12 @@ struct BenderReferenceView: View {
                 }
                 .onDelete { offsets in profiles.remove(atOffsets: offsets); persist() }
             }
-            Section("Important") {
+            Section(l("Important")) {
                 Text("These are user-entered values, NOT a manufacturer-verified catalogue. Check exact model, conduit size and the official manual before bending.")
                 Text("PVC requires its own heating and minimum-radius instructions. Do not apply metal conduit take-up automatically.")
             }
         }
-        .navigationTitle("Bender Reference")
+        .navigationTitle(l("Bender Reference"))
         .toolbar { EditButton() }
         .onAppear { profiles = (try? JSONDecoder().decode([BenderProfile].self, from: storedProfiles)) ?? [] }
     }
