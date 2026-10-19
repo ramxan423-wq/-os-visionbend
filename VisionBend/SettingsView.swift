@@ -8,7 +8,7 @@ struct SettingsView: View {
     private var tr: Bool {
         language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr")
     }
-    private func t(_ turkish: String, _ english: String) -> String { tr ? turkish : english }
+    private func t(_ turkish: String, _ english: String) -> String { VisionBendLocalization.text(english, turkish: turkish, language: language) }
 
     var body: some View {
         Form {
