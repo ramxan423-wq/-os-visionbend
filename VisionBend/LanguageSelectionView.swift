@@ -4,7 +4,7 @@ import SwiftUI
 /// readable even before a locale has been selected.
 enum VisionBendLanguages {
     static let supported: [(code: String, name: String)] = [
-        ("en","English"),("zh-Hans","简体中文"),("hi","हिन्दी"),("es","Español"),
+        ("en","English"),("en-GB","English (UK)"),("en-AU","English (Australia)"),("en-CA","English (Canada)"),("zh-Hant","繁體中文"),("zh-HK","繁體中文（香港）"),("fr-CA","Français (Canada)"),("zh-Hans","简体中文"),("hi","हिन्दी"),("es","Español"),
         ("ar","العربية"),("fr","Français"),("bn","বাংলা"),("pt","Português"),
         ("ru","Русский"),("ur","اردو"),("id","Bahasa Indonesia"),("de","Deutsch"),
         ("ja","日本語"),("sw","Kiswahili"),("mr","मराठी"),("te","తెలుగు"),
@@ -70,7 +70,7 @@ struct LanguageSelectionView: View {
             .navigationTitle("VisionBend")
             .onAppear {
                 let preferred = Locale.preferredLanguages.first ?? "en"
-                selected = VisionBendLanguages.supported.first(where: { preferred == $0.code || preferred.hasPrefix($0.code + "-") })?.code ?? "en"
+                selected = VisionBendLanguages.supported.first(where: { preferred == $0.code })?.code ?? VisionBendLanguages.supported.first(where: { preferred.hasPrefix($0.code + "-") })?.code ?? "en"
             }
         }
     }
