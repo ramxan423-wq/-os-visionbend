@@ -33,19 +33,6 @@ targets:
       testTargets:
         - VisionBendTests
         - VisionBendUITests
-  VisionBendWatch:
-    type: application
-    platform: watchOS
-    deploymentTarget: "9.0"
-    sources:
-      - path: VisionBendWatch
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.visionbend.conduit.watchkitapp
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: VisionBend
-        INFOPLIST_KEY_WKApplication: YES
-        CODE_SIGN_STYLE: Automatic
   VisionBendTests:
     type: bundle.unit-test
     platform: iOS
