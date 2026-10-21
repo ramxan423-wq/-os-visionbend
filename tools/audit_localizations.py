@@ -25,7 +25,8 @@ KEY_RE = r'"((?:[^"\\]|\\.)*)"'
 CODE_RE = re.compile(r'\("([a-zA-Z-]+)",\s*"')
 ENTRY_RE = re.compile(r'^\s*"((?:[^"\\]|\\.)+)": \[([^\n]+)\],?$', re.M)
 TRANS_RE = re.compile(r'"([a-zA-Z-]+)":\s*"((?:[^"\\]|\\.)*)"')
-LOCAL_RE = re.compile(r'\b(?:l|t)\(\s*"((?:[^"\\]|\\.)*)"')
+LOCAL_RE = re.compile(r'\bl\(\s*"((?:[^"\\]|\\.)*)"') 
+TWO_LANGUAGE_RE = re.compile(r'\bt\(\s*"(?:[^"\\]|\\.)*"\s*,\s*"((?:[^"\\]|\\.)*)"')
 TEXT_RE = re.compile(r'VisionBendLocalization\.text\(\s*"((?:[^"\\]|\\.)*)"')
 RAW_RE = re.compile(r'\b(?:Text|Section|Button|Label|TextField|Toggle|navigationTitle|navigationBarTitle|Picker|ShareLink)\(\s*"((?:[^"\\]|\\.)*)"')
 
@@ -70,7 +71,8 @@ def check():
         if path.name.startswith("VisionBendLocalization") or path.name == "VisionBendMoreTranslations.swift":
             continue
         src = path.read_text()
-        for pattern in (LOCAL_RE, TEXT_RE):
+        # t(turkish, english) uses the second, English argument as the catalog key.
+        for pattern in (LOCAL_RE, TWO_LANGUAGE_RE, TEXT_RE):
             for match in pattern.finditer(src):
                 call_sites.setdefault(unquote(match.group(1)), set()).add(path.name)
         for match in RAW_RE.finditer(src):
