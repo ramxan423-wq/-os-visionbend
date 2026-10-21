@@ -65,7 +65,7 @@ struct MultiBendPlannerView: View {
 
     var body: some View {
         Form {
-            Section("Conduit (all values in " + unitLabel + ")") {
+            Section(l("Conduit") + " (" + l("all values in") + " " + unitLabel + ")") {
                 TextField(l("Conduit length"), text: $conduitLength).keyboardType(.decimalPad)
                 TextField(l("Minimum straight between marks"), text: $minStraight).keyboardType(.decimalPad)
             }
@@ -91,14 +91,14 @@ struct MultiBendPlannerView: View {
                         guard let height = dimension(presetRise),
                               let bendAngle = Double(presetAngle.replacingOccurrences(of: ",", with: ".")),
                               let row = GreenleeSaddleTable.exact(modelID: verifiedModelID, angle: bendAngle, heightInches: height / conversion) else {
-                            message = "No exact published table cell installed for this model, angle and height. Enter verified Z/L1/L2 manually."
+                            message = l("No exact published table cell installed for this model, angle and height. Enter verified Z/L1/L2 manually.")
                             return
                         }
                         saddleZ = String(format: "%.4f", row.z * conversion)
                         saddleL1 = String(format: "%.4f", row.l1 * conversion)
                         saddleL2 = String(format: "%.4f", row.l2 * conversion)
                         saddleTableKey = "\(verifiedModelID)|\(bendAngle)|\(row.heightInches)"
-                        message = "Exact Greenlee manufacturer table cell loaded."
+                        message = l("Exact Greenlee manufacturer table cell loaded.")
                     }
                     Text(l("Only exact installed table cells auto-load. No interpolation.")).font(.caption)
                 }
@@ -120,8 +120,8 @@ struct MultiBendPlannerView: View {
             }
             if showAdvancedBenderOptions {
                 Section(l("Bender geometry")) {
-                    TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
-                    TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
+                    TextField(l("Centerline radius") + " (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
+                    TextField(l("Actual outside diameter") + " (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
                 }
             Section(l("Verified manufacturer profile")) {
                 Picker(l("Bender model"), selection: $verifiedModelID) {
@@ -137,7 +137,7 @@ struct MultiBendPlannerView: View {
                         .font(.caption).foregroundStyle(.orange)
                 }
                 if let item = VerifiedBenderCatalog.entries.first(where: { $0.id == verifiedModelID }) {
-                    Text("Official profile: \(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)")
+                    Text(l("Official profile") + ": \(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)")
                     if let url = URL(string: item.sourceURL) { Link("Manufacturer source", destination: url) }
                     Text(l("Only the exact model, conduit and size are covered. Greenlee 555 entries apply only to the listed 28008 rigid shoe and size. Other shoes require separate tables."))
                         .font(.caption).foregroundStyle(.secondary)
@@ -194,10 +194,10 @@ struct MultiBendPlannerView: View {
                 if steps.isEmpty {
                     Text(l("Generate or add bend marks to begin."))
                 } else {
-                    Text("Step \(min(guideStep + 1, steps.count)) of \(steps.count)")
+                    Text(l("Step") + " \(min(guideStep + 1, steps.count)) " + l("of") + " \(steps.count)")
                         .font(.headline)
                     let mark = steps[min(guideStep, steps.count - 1)]
-                    Text(String(format: "Measure %.2f %@ from the starting end. Mark the conduit. Align the verified bender reference. Bend %.1f degrees %@.", mark.position, unitLabel, mark.angle, mark.direction))
+                    Text(String(format: l("Measure %.2f %@ from the starting end. Mark the conduit. Align the verified bender reference. Bend %.1f degrees %@."), mark.position, unitLabel, mark.angle, mark.direction))
                     Text(l("Confirm bender radius, reference marks and springback before bending."))
                         .font(.caption).foregroundStyle(.secondary)
                     HStack {
@@ -215,7 +215,7 @@ struct MultiBendPlannerView: View {
             Section(l("Export")) {
                 Button(l("Create PDF marking sheet")) { makePDF() }.disabled(!valid || marks.isEmpty)
                 if let pdfURL {
-                    ShareLink(item: pdfURL) { Label("Share PDF", systemImage: "square.and.arrow.up") }
+                    ShareLink(item: pdfURL) { Label(l("Share PDF"), systemImage: "square.and.arrow.up") }
                 }
             }
             Section(l("Field verification")) {
@@ -298,25 +298,25 @@ struct MultiBendPlannerView: View {
 
     private func generatePreset() {
         if requiresIMCHardware && !confirmedIMCHardware {
-            message = "Install and confirm both 28008 shoe group and 13856 IMC squeeze roller first."
+            message = l("Install and confirm both 28008 shoe group and 13856 IMC squeeze roller first.")
             return
         }
         func number(_ value: String) -> Double? { dimension(value) }
         guard let rise = number(presetRise), let angle = number(presetAngle), let run = number(presetRun),
               rise.isFinite, angle.isFinite, run.isFinite,
               rise > 0, angle > 0, angle <= 90, run > 0, length > 0 else {
-            message = "Enter valid positive dimensions and angle up to 90 degrees."
+            message = l("Enter valid positive dimensions and angle up to 90 degrees.")
             return
         }
         if (preset == "3-Point Saddle" || preset == "4-Point Saddle") && !saddleTableKey.isEmpty {
             let expectedKey = "\(verifiedModelID)|\(angle)|\(rise / (selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0))"
             if saddleTableKey != expectedKey {
-                message = "Angle, height or model changed. Reload exact manufacturer saddle table values."; return
+                message = l("Angle, height or model changed. Reload exact manufacturer saddle table values."); return
             }
         }
         if preset == "90° Stub" {
             desiredStub = presetRise
-            message = "Use verified bender take-up and Add Calibrated Stub Mark."
+            message = l("Use verified bender take-up and Add Calibrated Stub Mark.")
             return
         }
         let first = length * 0.1
@@ -331,35 +331,35 @@ struct MultiBendPlannerView: View {
                 guard let index = sizes.firstIndex(of: tradeSize),
                       let factor = multipliers.first(where: { abs($0.0 - angle) < 0.001 })?.1,
                       let distance = number(obstructionDistance), distance.isFinite else {
-                    message = "Greenlee offset requires obstruction distance and 10, 15, 22.5, 30 or 45 degrees."
+                    message = l("Greenlee offset requires obstruction distance and 10, 15, 22.5, 30 or 45 degrees.")
                     return
                 }
                 let conversion = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
                 let firstMark = distance - xs[index] * conversion
-                guard firstMark >= 0 else { message = "Obstruction too close for X dimension."; return }
+                guard firstMark >= 0 else { message = l("Obstruction too close for X dimension."); return }
                 steps = [(firstMark, angle, "Up"), (firstMark + rise * factor, angle, "Down")]
             } else {
                 steps = [(first, angle, "Up"), (first + spacing, angle, "Down")]
             }
         case "3-Point Saddle":
-            guard angle <= 45 else { message = "Three-bend saddle outer angle must be at most 45 degrees; middle bend cannot exceed 90 degrees."; return }
+            guard angle <= 45 else { message = l("Three-bend saddle outer angle must be at most 45 degrees; middle bend cannot exceed 90 degrees."); return }
             if verifiedModelID.hasPrefix("greenlee-555") {
                 guard let z = number(saddleZ), let l1 = number(saddleL1), let l2 = number(saddleL2), z.isFinite, l1.isFinite, l2.isFinite, z >= 0, l1 > 0, l2 > 0 else {
-                    message = "Enter Greenlee saddle table Z, L1 and L2."; return
+                    message = l("Enter Greenlee saddle table Z, L1 and L2."); return
                 }
                 let firstMark = run - z
                 steps = [(firstMark, angle, "Up"), (firstMark + l1, 2 * angle, "Down"), (firstMark + l1 + l2, angle, "Up")]
                 break
             }
-            guard angle <= 45 else { message = "Outer saddle angle must be at most 45 degrees."; return }
+            guard angle <= 45 else { message = l("Outer saddle angle must be at most 45 degrees."); return }
             let middle = length / 2
             steps = [(middle - spacing, angle, "Up"), (middle, 2 * angle, "Down"), (middle + spacing, angle, "Up")]
         case "4-Point Saddle":
             if verifiedModelID.hasPrefix("greenlee-555") {
                 guard let z = number(saddleZ), let l1 = number(saddleL1), let l2 = number(saddleL2), z.isFinite, l1.isFinite, l2.isFinite, z >= 0, l1 > 0, l2 > 0 else {
-                    message = "Enter Greenlee saddle table Z, L1 and L2."; return
+                    message = l("Enter Greenlee saddle table Z, L1 and L2."); return
                 }
-                guard let straight = number(saddleStraight), straight.isFinite, straight >= 0 else { message = "Enter saddle straight-section length."; return }
+                guard let straight = number(saddleStraight), straight.isFinite, straight >= 0 else { message = l("Enter saddle straight-section length."); return }
                 let start = run - z
                 let thirdMark = start + l2 + straight
                 steps = [(start, angle, "Up"), (start + l1, angle, "Down"), (thirdMark, angle, "Down"), (thirdMark + l1, angle, "Up")]
@@ -379,25 +379,25 @@ struct MultiBendPlannerView: View {
             steps = (0..<n).map { (first + Double($0) * run / Double(n - 1), angle / Double(n), "Up") }
         case "Compound 90°":
             if verifiedModelID.hasPrefix("greenlee-555") {
-                message = "No verified Greenlee 555 compound 90 physical mark table. Theoretical stations cannot be used as hook-front marks."
+                message = l(l("No verified Greenlee 555 compound 90 physical mark table. Theoretical stations cannot be used as hook-front marks."))
                 return
             }
-            guard let radius = number(centerlineRadius), radius > 0 else { message = "Enter verified bend radius."; return }
+            guard let radius = number(centerlineRadius), radius > 0 else { message = l("Enter verified bend radius."); return }
             steps = [(rise, 90, "Up"), (rise + run + radius * .pi / 2, 90, "Right")]
         default:
-            message = "Choose a preset or add custom marks."
+            message = l("Choose a preset or add custom marks.")
             return
         }
         let proposed = steps.map { BendMark(position: $0.0, angle: $0.1, direction: $0.2) }
         guard FieldBendGeometry.isFeasible(markPositions: proposed.map { $0.position },
                                           conduitLength: length, minStraight: clearance) else {
-            message = "Marks exceed conduit length or violate minimum spacing."
+            message = l("Marks exceed conduit length or violate minimum spacing.")
             return
         }
         marks = proposed
         pdfURL = nil
         message = preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") ? "Greenlee 555 X-table marks: align each mark with front hook edge, rotate conduit 180 degrees for second bend. Approximate multiplier; verify minimum offset and springback." : preset == "Compound 90°" ? "Theoretical 90 + 90 bend stations generated. NOT bender arrow marks; confirm model-specific references and test bend." : preset == "Rolling Offset"
-            ? String(format: "Roll orientation %.1f degrees. Verify orientation and bender calibration.", atan2(run, rise) * 180 / .pi)
+            ? String(format: l("Roll orientation %.1f degrees. Verify orientation and bender calibration."), atan2(run, rise) * 180 / .pi)
             : "Theoretical marks ready. Confirm reference marks, bend direction, radius and springback."
     }
 
@@ -405,12 +405,12 @@ struct MultiBendPlannerView: View {
         guard let position = dimension(markPosition),
               let angle = Double(markAngle.replacingOccurrences(of: ",", with: ".")),
               position.isFinite, angle.isFinite, position >= 0, angle > 0, angle <= 90 else {
-            message = "Enter a valid position and angle (0–90°)."
+            message = l("Enter a valid position and angle (0–90°).")
             return
         }
         let proposed = marks.map(\.position) + [position]
         guard FieldBendGeometry.isFeasible(markPositions: proposed, conduitLength: length, minStraight: clearance) else {
-            message = "Mark outside conduit or too close to another mark."
+            message = l("Mark outside conduit or too close to another mark.")
             return
         }
         marks.append(BendMark(position: position, angle: angle, direction: direction))
@@ -420,7 +420,7 @@ struct MultiBendPlannerView: View {
 
     private func addCalibratedMark() {
         if requiresIMCHardware && !confirmedIMCHardware {
-            message = "Confirm 28008 shoe group AND 13856 IMC squeeze roller before marking."
+            message = l("Confirm 28008 shoe group AND 13856 IMC squeeze roller before marking.")
             return
         }
         guard !manufacturer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -431,21 +431,21 @@ struct MultiBendPlannerView: View {
               let take = dimension(takeUp),
               let offset = dimension(correction),
               let desired = dimension(desiredStub) else {
-            message = "Enter documented arrow or hook-front deduct and exact model. Star/other marks need a different formula."
+            message = l("Enter documented arrow or hook-front deduct and exact model. Star/other marks need a different formula.")
             return
         }
         if verifiedModelID.hasPrefix("greenlee-555"), desired < take + (selectedUnits == 0 ? 50.8 : selectedUnits == 1 ? 5.08 : 2) {
-            message = "Greenlee 555 minimum stub is deduct + 2 inches. Increase the desired stub."; return
+            message = l("Greenlee 555 minimum stub is deduct + 2 inches. Increase the desired stub."); return
         }
         let calibration = BenderCalibration(manufacturer: manufacturer, model: benderModel, conduit: conduitType, tradeSize: tradeSize, referenceMark: referenceMark, takeUp: take, fieldCorrection: offset, source: manualSource)
         guard let position = calibration.stubPosition(for: desired),
               FieldBendGeometry.isFeasible(markPositions: marks.map(\.position) + [position], conduitLength: length, minStraight: clearance) else {
-            message = "Calibrated mark is invalid or conflicts with existing marks."
+            message = l("Calibrated mark is invalid or conflicts with existing marks.")
             return
         }
         marks.append(BendMark(position: position, angle: 90, direction: direction))
         pdfURL = nil
-        message = "Stub mark added using your manual-supplied calibration."
+        message = l("Stub mark added using your manual-supplied calibration.")
     }
 
     private func makePDF() {
@@ -457,9 +457,9 @@ struct MultiBendPlannerView: View {
         let data = renderer.pdfData { context in
             for page in 0..<pageCount {
                 context.beginPage()
-                let title = "VisionBend - Multi-Bend Marking Sheet (\(page + 1)/\(pageCount))"
+                let title = l("VisionBend - Multi-Bend Marking Sheet") + " (\(page + 1)/\(pageCount))"
             title.draw(at: CGPoint(x: 36, y: 38), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 18)])
-            let info = String(format: "Conduit length: %.2f %@   Minimum mark spacing: %.2f %@", length, unitLabel, clearance, unitLabel)
+            let info = String(format: l("Conduit length: %.2f %@   Minimum mark spacing: %.2f %@"), length, unitLabel, clearance, unitLabel)
             info.draw(at: CGPoint(x: 36, y: 76), withAttributes: [.font: UIFont.systemFont(ofSize: 12)])
             let left: CGFloat = 50
             let width: CGFloat = 495
@@ -482,7 +482,7 @@ struct MultiBendPlannerView: View {
                 let line = String(format: "%d. From start: %.2f  |  Angle: %.1f deg  |  %@", index + 1, mark.position, mark.angle, mark.direction)
                 line.draw(at: CGPoint(x: 36, y: 225 + CGFloat(index % marksPerPage) * 23), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
             }
-            let caution = "SCHEMATIC ONLY. Verify bender reference and calibration before field use."
+            let caution = l("SCHEMATIC ONLY. Verify bender reference and calibration before field use.")
             caution.draw(in: CGRect(x: 36, y: 760, width: 520, height: 55), withAttributes: [.font: UIFont.systemFont(ofSize: 10)])
             }
         }
