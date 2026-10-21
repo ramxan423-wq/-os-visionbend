@@ -17,6 +17,7 @@ final class PhoneWatchSync: NSObject, ObservableObject, WCSessionDelegate {
         guard WCSession.isSupported() else { status = "Watch not supported"; return }
         let payload: [String: Any] = [
             "name": projectName,
+            "language": UserDefaults.standard.string(forKey: "visionbend.language") ?? "system",
             "units": units,
             "marks": marks.sorted { $0.position < $1.position }.map {
                 ["position": $0.position, "angle": $0.angle, "direction": $0.direction] as [String: Any]
