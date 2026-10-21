@@ -1,0 +1,103 @@
+name: VisionBend clean simulator rebuild and screenshots
+
+on:
+  push:
+    branches:
+      - qa/visionbend-ios-rebuild-screenshots-20261021
+    paths:
+      - '.github/workflows/visionbend-ios-screenshots.yml'
+      - 'VisionBendUITests/VisionBendScreenshotsUITests.swift'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate app icons
+        run: python3 tools/generate_app_icon.py
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Clean build iOS simulator from source
+        run: |
+          xcodebuild clean build \
+            -project VisionBend.xcodeproj -scheme VisionBend \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Capture real SwiftUI screenshots with XCUITest
+        run: |
+          xcrun simctl list devices available
+          DEVICE_ID=$(xcrun simctl list devices available | grep 'iPhone ' | grep -Eo '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}' | head -n 1)
+          if [ -z "$DEVICE_ID" ]; then echo 'No iPhone simulator available'; exit 1; fi
+          xcodebuild test \
+            -project VisionBend.xcodeproj -scheme VisionBend \
+            -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -only-testing:VisionBendUITests/VisionBendScreenshotsUITests \
+            -resultBundlePath VisionBendScreenshots.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Export real simulator screenshot attachments
+        if: always()
+        run: |
+          if [ -d VisionBendScreenshots.xcresult ]; then
+            mkdir -p screenshot-exports
+            xcrun xcresulttool export attachments --path VisionBendScreenshots.xcresult --output-path screenshot-exports || true
+            find screenshot-exports -type f | head -n 30 || true
+          fi
+      - name: Prepare images with readable names
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, shutil, subprocess
+          root=pathlib.Path('screenshot-exports')
+          target=pathlib.Path('VisionBendScreenshots')
+          target.mkdir(exist_ok=True)
+          mapped={}
+          for manifest in root.rglob('manifest.json'):
+              try: data=json.loads(manifest.read_text())
+              except Exception: continue
+              def walk(value):
+                  if isinstance(value,dict):
+                      label=value.get('suggestedHumanReadableName') or value.get('name') or ''
+                      filename=value.get('exportedFileName') or value.get('filename') or ''
+                      if label and filename and re.match(r'^0[1-8]-',label):
+                          candidate=manifest.parent/filename
+                          if candidate.exists():mapped[str(candidate)]=re.sub(r'[^a-zA-Z0-9_-]','-',label)
+                      for child in value.values():walk(child)
+                  elif isinstance(value,list):
+                      for child in value:walk(child)
+              walk(data)
+          if not mapped:
+              candidates=[p for p in root.rglob('*') if p.suffix.lower() in ('.png','.jpeg','.jpg','.heic')]
+              for index,p in enumerate(sorted(candidates)):mapped[str(p)]=f'capture-{index+1:02d}'
+          for path,label in mapped.items():
+              source=pathlib.Path(path)
+              dest=target/f'{label}.png'
+              if source.suffix.lower()=='.png':shutil.copy2(source,dest)
+              else:subprocess.run(['sips','-s','format','png',str(source),'--out',str(dest)],check=True)
+          print('REAL SCREENSHOTS:',[p.name for p in target.glob('*.png')])
+          if not list(target.glob('*.png')):raise SystemExit('No simulator screenshots captured')
+          PY
+      - name: Upload screenshots and Xcode results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VisionBend-real-iPhone-simulator-screenshots
+          path: |
+            VisionBendScreenshots/*.png
+            VisionBendScreenshots.xcresult
+          if-no-files-found: warn
+      - name: Publish screenshots to QA branch for direct viewing
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VisionBendScreenshots/*.png
+          git diff --cached --quiet || git commit -m "Add genuine VisionBend iPhone simulator screenshots"
+          git push origin HEAD:qa/visionbend-ios-rebuild-screenshots-20261021
