@@ -31,14 +31,16 @@ struct BendExportDocument: FileDocument {
 
 struct ProjectExportView: View {
     let project: BendProjectExport
+    @AppStorage("visionbend.language") private var language = "system"
+    private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @State private var exportJSON = false
     @State private var exportCSV = false
     var body: some View {
         VStack(spacing: 16) {
-            Button("Export JSON") { exportJSON = true }
-            Button("Export CSV") { exportCSV = true }
+            Button(l("Export JSON")) { exportJSON = true }
+            Button(l("Export CSV")) { exportCSV = true }
             ShareLink(item: project.title + "\n" + project.result) {
-                Label("Share Project Summary", systemImage: "square.and.arrow.up")
+                Label(l("Share Project Summary"), systemImage: "square.and.arrow.up")
             }
         }
         .padding()
