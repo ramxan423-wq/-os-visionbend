@@ -21,7 +21,8 @@ let package = Package(
                 "FieldQuickCheck.swift",
                 "AdvancedFieldPatterns.swift",
                 "BenderCalibration.swift",
-                "VerifiedBenderCatalog.swift"
+                "VerifiedBenderCatalog.swift",
+                "VisionBendLocalization.swift"
             ]
         ),
         .testTarget(
@@ -35,7 +36,8 @@ let package = Package(
                 "ExtraBendCalculationsTests.swift",
                 "FieldBendGeometryTests.swift",
                 "BenderCalibrationTests.swift",
-                "AdvancedFieldPatternsTests.swift"
+                "AdvancedFieldPatternsTests.swift",
+                "EnglishLocalizationTests.swift"
             ]
         )
     ]
