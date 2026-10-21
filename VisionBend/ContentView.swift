@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var showReference = false
     @State private var showMultiBend = false
     @State private var showCutPlanner = false
+    @State private var showAdvancedPatterns = false
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
     @AppStorage("visionbend.lastAngle") private var angle = "30"
@@ -80,6 +81,16 @@ struct ContentView: View {
                 angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
             }
             output = ""; previousUnit = newValue
+        }
+        .sheet(isPresented: $showAdvancedPatterns) {
+            NavigationStack {
+                AdvancedPatternToolboxView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showAdvancedPatterns = false }
+                        }
+                    }
+            }
         }
         .sheet(isPresented: $showCutPlanner) {
             NavigationStack {
@@ -295,6 +306,7 @@ struct ContentView: View {
     private var planningPage: some View {
         List {
             Button { showMultiBend = true } label: { Label(t("Çoklu büküm ve 2D plan", "Multi-bend & 2D planner"), systemImage: "point.topleft.down.curvedto.point.bottomright.up") }
+            Button { showAdvancedPatterns = true } label: { Label(t("Gelişmiş büküm çeşitleri", "Advanced bend patterns"), systemImage: "point.3.connected.trianglepath.dotted") }
             Button { showCutPlanner = true } label: { Label(t("Boru kesim optimizasyonu", "Conduit cut optimizer"), systemImage: "scissors") }
             Button { showReference = true } label: { Label(t("Bükücü referans ve katalog", "Bender reference"), systemImage: "books.vertical") }
         }.tint(accent)
