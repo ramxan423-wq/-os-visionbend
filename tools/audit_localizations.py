@@ -78,7 +78,19 @@ def check():
     if picker != EXPECTED:
         raise SystemExit('Language picker differs from required 20: ' + repr(picker))
     translations = load_primary()
-    for source in (load_extra(), load_watch()):
+    # Bundled auto-generated draft must contain actual nonempty locale strings.
+    draft_path = SOURCE / "GeneratedTranslations.json"
+    draft = {}
+    if draft_path.exists():
+        by_language = json.loads(draft_path.read_text())
+        for code, row in by_language.items():
+            if code not in EXPECTED or code == "en":
+                raise SystemExit("Unknown generated translation locale: " + code)
+            for english, translated in row.items():
+                if not isinstance(translated, str) or not translated.strip():
+                    raise SystemExit("Empty generated translation: " + code + " " + english)
+                draft.setdefault(english, {})[code] = translated
+    for source in (load_extra(), load_watch(), draft):
         for key, row in source.items():
             translations.setdefault(key, {}).update(row)
 
