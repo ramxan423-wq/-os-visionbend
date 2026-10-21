@@ -148,32 +148,21 @@ struct ContentView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 12) {
                     Text(t("Büküm türü", "Bend type")).font(.headline)
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    Picker(t("Büküm türü", "Bend type"), selection: $mode) {
                         ForEach(names.indices, id: \.self) { i in
-                            Button {
-                                mode = i
-                                output = ""
-                                errorMessage = ""
-                                height = ""
-                                angle = ""
-                            } label: {
-                                HStack(spacing: 7) {
-                                    Image(systemName: mode == i ? "checkmark.circle.fill" : "circle")
-                                    Text(t(bendNamesTR[i], names[i]))
-                                        .font(.subheadline.weight(.semibold))
-                                        .lineLimit(2)
-                                        .minimumScaleFactor(0.8)
-                                    Spacer(minLength: 0)
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 54)
-                                .padding(.horizontal, 10)
-                                .background(mode == i ? accent.opacity(0.17) : Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(mode == i ? accent : .clear, lineWidth: 1.5))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(mode == i ? .isSelected : [])
+                            Text(t(bendNamesTR[i], names[i])).tag(i)
                         }
                     }
+                    .pickerStyle(.menu)
+                    .onChange(of: mode) { _ in
+                        height = ""
+                        angle = ""
+                        output = ""
+                        errorMessage = ""
+                    }
+                    Text(t("Önce bükümü seçin; yalnızca o büküme ait ölçüleri girin.",
+                           "Select the bend first; enter only the measurements required for it."))
+                        .font(.caption).foregroundStyle(.secondary)
                     Text(t("Seçilen işlem: ", "Selected: ") + t(bendNamesTR[mode], names[mode]))
                         .font(.subheadline.bold())
                         .foregroundStyle(accent)
