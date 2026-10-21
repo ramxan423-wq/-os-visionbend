@@ -65,7 +65,15 @@ def load_watch():
         return {}
     keys = json.loads(km.group(1))
     rows = {}
-    for m in re.finditer(r'^\s*"([a-zA-Z-]+)": (\[[^\n]+\]),?
+    for m in re.finditer(r'^\s*"([a-zA-Z-]+)": (\[[^\n]+\]),?$', src, re.M):
+        rows[m.group(1)] = json.loads(m.group(2))
+        if len(rows[m.group(1)]) != len(keys):
+            raise SystemExit("Watch localization length mismatch: " + m.group(1))
+    return {key: {code: row[i] for code, row in rows.items()}
+            for i, key in enumerate(keys)}
+
+
+def check():
     picker = tuple(CODE_RE.findall(LANGUAGES.read_text().split('static let supported:', 1)[1].split('    ]',1)[0]))
     if picker != EXPECTED:
         raise SystemExit('Language picker differs from required 20: ' + repr(picker))
