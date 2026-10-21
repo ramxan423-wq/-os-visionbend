@@ -30,6 +30,7 @@ struct ContentView: View {
     private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { VisionBendLocalization.text(en, turkish: tr, language: language) }
     private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
+    private var selectedMode: Int { names.indices.contains(mode) ? mode : 0 }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
         switch mode {
@@ -65,7 +66,10 @@ struct ContentView: View {
         .tint(accent)
         .environment(\.locale, activeLocale)
         .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
-        .onAppear { previousUnit = units }
+        .onAppear {
+            if !names.indices.contains(mode) { mode = 0 }
+            previousUnit = units
+        }
         .onChange(of: units) { newValue in
             guard let oldUnit = MeasurementUnit(rawValue: previousUnit),
                   let newUnit = MeasurementUnit(rawValue: newValue) else { previousUnit = newValue; return }
@@ -77,15 +81,87 @@ struct ContentView: View {
             }
             output = ""; previousUnit = newValue
         }
-        .sheet(isPresented: $showCutPlanner) { NavigationStack { ConduitCutOptimizerView() } }
-        .sheet(isPresented: $showMultiBend) { NavigationStack { MultiBendPlannerView() } }
-        .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
-        .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
-        .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
+        .sheet(isPresented: $showCutPlanner) {
+            NavigationStack {
+                ConduitCutOptimizerView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showCutPlanner = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showMultiBend) {
+            NavigationStack {
+                MultiBendPlannerView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showMultiBend = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showReference) {
+            NavigationStack {
+                BenderReferenceView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showReference = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showAR) {
+            NavigationStack {
+                ARMeasureView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showAR = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showPremium) {
+            NavigationStack {
+                SubscriptionView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showPremium = false }
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
-        .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showDepthScan) { NavigationStack { DepthConduitScanView() } }
-        .sheet(isPresented: $showConduitScan) { NavigationStack { ConduitScanView() } }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showSettings = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showDepthScan) {
+            NavigationStack {
+                DepthConduitScanView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showDepthScan = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showConduitScan) {
+            NavigationStack {
+                ConduitScanView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showConduitScan = false }
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showCamera) {
             NavigationStack {
                 CameraLevelView()
@@ -163,7 +239,7 @@ struct ContentView: View {
                     Text(t("Önce bükümü seçin; yalnızca o büküme ait ölçüleri girin.",
                            "Select the bend first; enter only the measurements required for it."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Text(t("Seçilen işlem: ", "Selected: ") + t(bendNamesTR[mode], names[mode]))
+                    Text(t("Seçilen işlem: ", "Selected: ") + t(bendNamesTR[selectedMode], names[selectedMode]))
                         .font(.subheadline.bold())
                         .foregroundStyle(accent)
                     Text(firstLabel + " (" + unitName + ")").font(.subheadline.bold())

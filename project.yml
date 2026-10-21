@@ -32,6 +32,7 @@ targets:
     scheme:
       testTargets:
         - VisionBendTests
+        - VisionBendUITests
   VisionBendWatch:
     type: application
     platform: watchOS
@@ -56,3 +57,15 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.visionbend.conduit.tests
+
+  VisionBendUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: VisionBendUITests
+    dependencies:
+      - target: VisionBend
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.visionbend.conduit.uitests

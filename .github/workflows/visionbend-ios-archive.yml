@@ -24,6 +24,8 @@ jobs:
           }
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Generate App Store icon asset catalog
+        run: python3 tools/generate_app_icon.py
       - name: Generate project
         run: xcodegen generate
       - name: Ensure OpenSSL 3 for PKCS#12 compatibility
@@ -67,7 +69,31 @@ jobs:
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/VisionBend.xcarchive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" archive
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/VisionBend.xcarchive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" archive
+      - name: Export signed App Store IPA
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, plistlib
+          options = {
+              "method": "app-store-connect",
+              "destination": "export",
+              "signingStyle": "manual",
+              "teamID": os.environ["TEAM_ID"],
+              "provisioningProfiles": {
+                  "com.visionbend.conduit": os.environ["PROFILE_NAME"]
+              },
+          }
+          with (pathlib.Path(os.environ["RUNNER_TEMP"]) / "ExportOptions.plist").open("wb") as stream:
+              plistlib.dump(options, stream)
+          PY
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/VisionBend.xcarchive" \
+            -exportPath "$GITHUB_WORKSPACE/dist" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          find "$GITHUB_WORKSPACE/dist" -name '*.ipa' -type f -print -quit | grep -q .
       - name: Package archive
         run: |
           cd "$RUNNER_TEMP"
@@ -75,5 +101,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: VisionBend-signed-archive
-          path: VisionBend.xcarchive.zip
+          path: |
+            VisionBend.xcarchive.zip
+            dist/*.ipa
           retention-days: 7

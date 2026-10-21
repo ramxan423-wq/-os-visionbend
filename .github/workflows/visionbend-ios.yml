@@ -6,6 +6,7 @@ on:
     paths:
       - 'VisionBend/**'
       - 'VisionBendTests/**'
+      - 'VisionBendUITests/**'
       - 'VisionBendWatch/**'
       - 'project.yml'
       - '.github/workflows/visionbend-ios.yml'
@@ -21,6 +22,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Generate App Store icon asset catalog
+        run: python3 tools/generate_app_icon.py
       - name: Generate iOS Xcode project
         working-directory: .
         run: xcodegen generate

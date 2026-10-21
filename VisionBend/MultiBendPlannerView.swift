@@ -46,11 +46,16 @@ struct MultiBendPlannerView: View {
     @State private var showARMarks = false
     @State private var guideStep = 0
     @AppStorage("visionbend.units") private var selectedUnits = 0
+    // The initial planner examples are in millimeters, whatever the saved user unit.
+    @State private var inputUnits = 0
+    @State private var showAdvancedBenderOptions = false
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
 
-    private var length: Double { Double(conduitLength) ?? 0 }
-    private var clearance: Double { Double(minStraight) ?? 0 }
+    private var currentUnit: MeasurementUnit { MeasurementUnit(rawValue: selectedUnits) ?? .millimeters }
+    private func dimension(_ text: String) -> Double? { FieldInputNumber.parse(text, unit: currentUnit) }
+    private var length: Double { dimension(conduitLength) ?? 0 }
+    private var clearance: Double { dimension(minStraight) ?? 0 }
     private var sorted: [BendMark] { marks.sorted { $0.position < $1.position } }
     private var valid: Bool {
         length > 0 && clearance >= 0 &&
@@ -63,10 +68,6 @@ struct MultiBendPlannerView: View {
             Section("Conduit (all values in " + unitLabel + ")") {
                 TextField(l("Conduit length"), text: $conduitLength).keyboardType(.decimalPad)
                 TextField(l("Minimum straight between marks"), text: $minStraight).keyboardType(.decimalPad)
-            }
-            Section(l("Bender geometry")) {
-                TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
-                TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
             }
             Section(l("Shape")) {
                 Picker(l("Shape"), selection: $preset) {
@@ -87,7 +88,7 @@ struct MultiBendPlannerView: View {
                     }
                     Button(l("Load Exact Greenlee Table Values")) {
                         let conversion = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
-                        guard let height = Double(presetRise.replacingOccurrences(of: ",", with: ".")),
+                        guard let height = dimension(presetRise),
                               let bendAngle = Double(presetAngle.replacingOccurrences(of: ",", with: ".")),
                               let row = GreenleeSaddleTable.exact(modelID: verifiedModelID, angle: bendAngle, heightInches: height / conversion) else {
                             message = "No exact published table cell installed for this model, angle and height. Enter verified Z/L1/L2 manually."
@@ -114,6 +115,14 @@ struct MultiBendPlannerView: View {
                 Button(l("Add Mark")) { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
             }
+            Section {
+                Toggle(VisionBendLocalization.text("Advanced bender options", turkish: "Gelişmiş bükücü ayarları", language: language), isOn: $showAdvancedBenderOptions)
+            }
+            if showAdvancedBenderOptions {
+                Section(l("Bender geometry")) {
+                    TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
+                    TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
+                }
             Section(l("Verified manufacturer profile")) {
                 Picker(l("Bender model"), selection: $verifiedModelID) {
                     Text(l("Manual / unsupported model")).tag("")
@@ -148,6 +157,7 @@ struct MultiBendPlannerView: View {
                 Text(l("Use only exact-model values confirmed in the manufacturer manual. Reference marks differ between benders."))
                     .font(.caption).foregroundStyle(.secondary)
             }
+            }
             Section(l("2D marking diagram (schematic)")) {
                 BendMarkDiagram(marks: sorted, conduitLength: length)
                     .frame(height: 145)
@@ -155,7 +165,7 @@ struct MultiBendPlannerView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section(l("3D preview")) {
-                BendShapePreview(marks: sorted, length: length, centerlineRadius: Double(centerlineRadius) ?? 0, conduitOutsideDiameter: Double(outsideDiameter) ?? 0).frame(height: 280)
+                BendShapePreview(marks: sorted, length: length, centerlineRadius: dimension(centerlineRadius) ?? 0, conduitOutsideDiameter: dimension(outsideDiameter) ?? 0).frame(height: 280)
                 Text(l("Theoretical shape only. Confirm bend radius and equipment calibration."))
             }
             Section(l("Bend sequence")) {
@@ -214,7 +224,9 @@ struct MultiBendPlannerView: View {
             }
         }
         .navigationTitle(l("Multi-Bend Planner"))
+        .onAppear { adaptDimensionsToCurrentUnits() }
         .onChange(of: selectedUnits) { _ in
+            adaptDimensionsToCurrentUnits()
             if !verifiedModelID.isEmpty { applyVerifiedModel(verifiedModelID) }
         }
         .toolbar { EditButton() }
@@ -224,6 +236,36 @@ struct MultiBendPlannerView: View {
                                unitToMeters: selectedUnits == 0 ? 0.001 : selectedUnits == 1 ? 0.01 : 0.0254)
             }
         }
+    }
+
+    private func adaptDimensionsToCurrentUnits() {
+        guard let from = MeasurementUnit(rawValue: inputUnits), from != currentUnit else { return }
+        func change(_ text: inout String) {
+            text = FieldInputNumber.convertedText(text, from: from, to: currentUnit)
+        }
+        change(&conduitLength)
+        change(&minStraight)
+        change(&markPosition)
+        change(&presetRise)
+        change(&presetRun)
+        change(&obstructionDistance)
+        change(&saddleZ)
+        change(&saddleL1)
+        change(&saddleL2)
+        change(&saddleStraight)
+        change(&centerlineRadius)
+        change(&outsideDiameter)
+        change(&takeUp)
+        change(&correction)
+        change(&desiredStub)
+        marks = marks.map { mark in
+            var copy = mark
+            copy.position = from.convert(mark.position, to: currentUnit)
+            return copy
+        }
+        inputUnits = currentUnit.rawValue
+        saddleTableKey = ""
+        pdfURL = nil
     }
 
     private func applyVerifiedModel(_ id: String) {
@@ -259,7 +301,7 @@ struct MultiBendPlannerView: View {
             message = "Install and confirm both 28008 shoe group and 13856 IMC squeeze roller first."
             return
         }
-        func number(_ value: String) -> Double? { Double(value.replacingOccurrences(of: ",", with: ".")) }
+        func number(_ value: String) -> Double? { dimension(value) }
         guard let rise = number(presetRise), let angle = number(presetAngle), let run = number(presetRun),
               rise.isFinite, angle.isFinite, run.isFinite,
               rise > 0, angle > 0, angle <= 90, run > 0, length > 0 else {
@@ -360,7 +402,7 @@ struct MultiBendPlannerView: View {
     }
 
     private func addMark() {
-        guard let position = Double(markPosition.replacingOccurrences(of: ",", with: ".")),
+        guard let position = dimension(markPosition),
               let angle = Double(markAngle.replacingOccurrences(of: ",", with: ".")),
               position.isFinite, angle.isFinite, position >= 0, angle > 0, angle <= 90 else {
             message = "Enter a valid position and angle (0–90°)."
@@ -386,9 +428,9 @@ struct MultiBendPlannerView: View {
               !tradeSize.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !manualSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               ["arrow", "hook front"].contains(referenceMark.lowercased()),
-              let take = Double(takeUp.replacingOccurrences(of: ",", with: ".")),
-              let offset = Double(correction.replacingOccurrences(of: ",", with: ".")),
-              let desired = Double(desiredStub.replacingOccurrences(of: ",", with: ".")) else {
+              let take = dimension(takeUp),
+              let offset = dimension(correction),
+              let desired = dimension(desiredStub) else {
             message = "Enter documented arrow or hook-front deduct and exact model. Star/other marks need a different formula."
             return
         }
@@ -409,9 +451,13 @@ struct MultiBendPlannerView: View {
     private func makePDF() {
         let page = CGRect(x: 0, y: 0, width: 595, height: 842)
         let renderer = UIGraphicsPDFRenderer(bounds: page)
+        let marksPerPage = 20
+        let pageCount = max(1, (sorted.count + marksPerPage - 1) / marksPerPage)
+        let allMarks = sorted
         let data = renderer.pdfData { context in
-            context.beginPage()
-            let title = "VisionBend - Multi-Bend Marking Sheet"
+            for page in 0..<pageCount {
+                context.beginPage()
+                let title = "VisionBend - Multi-Bend Marking Sheet (\(page + 1)/\(pageCount))"
             title.draw(at: CGPoint(x: 36, y: 38), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 18)])
             let info = String(format: "Conduit length: %.2f %@   Minimum mark spacing: %.2f %@", length, unitLabel, clearance, unitLabel)
             info.draw(at: CGPoint(x: 36, y: 76), withAttributes: [.font: UIFont.systemFont(ofSize: 12)])
@@ -424,7 +470,7 @@ struct MultiBendPlannerView: View {
             path.lineWidth = 3
             UIColor.black.setStroke()
             path.stroke()
-            for mark in sorted {
+            for mark in allMarks {
                 let x = left + width * CGFloat(mark.position / length)
                 let tick = UIBezierPath()
                 tick.move(to: CGPoint(x: x, y: baseline - 14))
@@ -432,12 +478,13 @@ struct MultiBendPlannerView: View {
                 tick.lineWidth = 1
                 tick.stroke()
             }
-            for (index, mark) in sorted.enumerated() {
+            for (index, mark) in allMarks.enumerated() where index / marksPerPage == page {
                 let line = String(format: "%d. From start: %.2f  |  Angle: %.1f deg  |  %@", index + 1, mark.position, mark.angle, mark.direction)
-                line.draw(at: CGPoint(x: 36, y: 225 + CGFloat(index) * 23), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
+                line.draw(at: CGPoint(x: 36, y: 225 + CGFloat(index % marksPerPage) * 23), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
             }
             let caution = "SCHEMATIC ONLY. Verify bender reference and calibration before field use."
             caution.draw(in: CGRect(x: 36, y: 760, width: 520, height: 55), withAttributes: [.font: UIFont.systemFont(ofSize: 10)])
+            }
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("VisionBend-Marks-\(UUID().uuidString).pdf")
         do { try data.write(to: url); pdfURL = url; message = "" }
