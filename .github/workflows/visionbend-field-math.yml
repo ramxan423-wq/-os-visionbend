@@ -14,6 +14,7 @@ on:
       - 'VisionBend/VerifiedBenderCatalog.swift'
       - 'VisionBend/BenderCalibration.swift'
       - 'tools/field_math_test_runner.swift'
+      - 'Package.swift'
       - '.github/workflows/visionbend-field-math.yml'
   workflow_dispatch:
 
@@ -31,6 +32,8 @@ jobs:
       - name: Parse all iOS SwiftUI and XCTest sources (syntax only)
         run: |
           swiftc -frontend -parse VisionBend/*.swift VisionBendTests/*.swift VisionBendUITests/*.swift
+      - name: Run XCTest regressions on production Swift field formulas
+        run: swift test --parallel
       - name: Compile production Swift math and execute field checks
         run: |
           swiftc -O -o /tmp/visionbend-field-math \
