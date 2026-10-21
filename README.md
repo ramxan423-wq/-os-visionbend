@@ -1,10 +1,10 @@
 # VisionBend iOS
 
-Native SwiftUI electrical-conduit bending and measurement app. The source includes eight basic bend calculators, advanced multi-bend planning, cut optimization, manufacturer references, project history, PDF export, camera-level, calibrated photo scan, optional AR/LiDAR tools and optional Apple Watch integration.
+Native SwiftUI electrical-conduit bending and measurement app. The source includes eight basic bend calculators, advanced multi-bend planning, cut optimization, manufacturer references, project history, PDF export, camera-level, calibrated photo scan, optional AR/LiDAR tools.
 
 ## Current verification
-- GitHub Actions builds the unsigned iOS and watchOS Simulator targets and runs XCTest on macOS. See [iOS build verification](https://github.com/ramxan423-wq/-os-visionbend/actions).
-- A successful simulator build **does not** prove that camera, ARKit, LiDAR, Watch connectivity, purchasing, or notifications work on real devices.
+- GitHub Actions builds the unsigned iOS Simulator target and runs XCTest on macOS. See [iOS build verification](https://github.com/ramxan423-wq/-os-visionbend/actions).
+- A successful simulator build **does not** prove that camera, ARKit, LiDAR, purchasing, or notifications work on real devices.
 - The signed App Store archive workflow requires an Apple distribution certificate and matching provisioning profile. Codemagic has a separate App Store signed IPA workflow.
 - The build workflows generate the App Store icon asset catalog before XcodeGen.
 - The app's StoreKit product identifiers have not yet been populated. **Premium subscriptions are not operational until the actual App Store Connect identifiers and entitlement behavior are configured and tested.**
