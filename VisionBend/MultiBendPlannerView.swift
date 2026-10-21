@@ -217,6 +217,8 @@ struct MultiBendPlannerView: View {
             }
             Section(l("Bend sequence")) {
                 Toggle(l("Measure marks from opposite end"), isOn: $measureFromFarEnd)
+                Text(l("Only the measuring end changes. Bend directions do not flip automatically; recheck reference marks before bending."))
+                    .font(.caption).foregroundStyle(.orange)
                 ForEach(readout) { mark in
                     HStack {
                         Text(String(format: "%.2f %@", mark.position, unitLabel)).monospacedDigit()
