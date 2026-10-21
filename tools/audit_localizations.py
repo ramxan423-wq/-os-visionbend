@@ -94,7 +94,8 @@ def check():
                 call_sites.setdefault(unquote(match.group(1)), set()).add(path.name)
         for match in RAW_RE.finditer(src):
             text = unquote(match.group(1))
-            if text and not text.startswith(("VisionBend", "Greenlee", "AR ", "UIKit")):
+            # Branding and manufacturer-identifying data are intentionally not translated.
+            if text and not text.startswith(("VisionBend", "Greenlee", "Premium", "AR ", "UIKit", "\\(")):
                 raw_sites.setdefault(text, set()).add(path.name)
 
     coverage = {}
