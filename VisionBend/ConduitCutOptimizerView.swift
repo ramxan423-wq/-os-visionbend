@@ -16,6 +16,8 @@ struct ConduitCutOptimizerView: View {
                 TextField(l("Stock length (same units)"), text: $stock).keyboardType(.decimalPad)
                 TextField(l("Saw kerf per cut"), text: $kerf).keyboardType(.decimalPad)
                 TextField(l("Required pieces, comma separated"), text: $cuts)
+                Text(VisionBendLocalization.text("Use semicolons between lengths when entering decimal commas.", turkish: "Ondalık sayılarda virgül kullanıyorsanız uzunlukları noktalı virgülle ayırın.", language: language))
+                    .font(.caption).foregroundStyle(.secondary)
                 Text(l("Stock length (same units)") + ": " + currentUnit.symbol)
                     .font(.caption).foregroundStyle(.secondary)
                 Button(l("Optimize cuts")) { calculate() }
@@ -36,10 +38,7 @@ struct ConduitCutOptimizerView: View {
         guard let from = MeasurementUnit(rawValue: inputUnits), from != currentUnit else { return }
         stock = FieldInputNumber.convertedText(stock, from: from, to: currentUnit)
         kerf = FieldInputNumber.convertedText(kerf, from: from, to: currentUnit)
-        // Preserve the existing comma-separated list, but convert each length.
-        cuts = cuts.split(separator: ",", omittingEmptySubsequences: false)
-            .map { FieldInputNumber.convertedText(String($0).trimmingCharacters(in: .whitespaces), from: from, to: currentUnit) }
-            .joined(separator: ", ")
+        cuts = ConduitCutInput.convertedText(cuts, from: from, to: currentUnit)
         result = ""
         inputUnits = currentUnit.rawValue
     }
@@ -49,12 +48,10 @@ struct ConduitCutOptimizerView: View {
               length.isFinite, blade.isFinite, length > 0, blade >= 0 else {
             result = l("Invalid stock length or saw kerf."); return
         }
-        let entries = cuts.split(whereSeparator: { $0 == "," || $0 == ";" || $0 == "\n" })
-        let parsed = entries.map { parse(String($0)) }
-        guard parsed.allSatisfy({ $0 != nil }) else {
+        guard let enteredPieces = ConduitCutInput.lengths(cuts, unit: currentUnit) else {
             result = l("Invalid piece length. Check every entered value."); return
         }
-        let pieces = parsed.compactMap { $0 }.sorted(by: >)
+        let pieces = enteredPieces.sorted(by: >)
         guard !pieces.isEmpty, pieces.count <= 500, pieces.allSatisfy({ $0.isFinite && $0 > 0 && $0 + blade <= length }) else {
             result = l("Enter 1–500 positive pieces, each fitting the stock."); return
         }
