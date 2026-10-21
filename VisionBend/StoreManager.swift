@@ -16,7 +16,7 @@ final class StoreManager: ObservableObject {
         do {
             products = try await Product.products(for: identifiers)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = "Unable to load subscription information. Try again later."
         }
     }
 
@@ -27,12 +27,12 @@ final class StoreManager: ObservableObject {
                 await transaction.finish()
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = "Purchase could not be completed. Please try again."
         }
     }
 
     func restore() async {
         do { try await AppStore.sync() }
-        catch { errorMessage = error.localizedDescription }
+        catch { errorMessage = "Purchases could not be restored. Please try again." }
     }
 }
