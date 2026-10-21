@@ -12,7 +12,9 @@ final class AdvancedFieldPatternsTests: XCTestCase {
         XCTAssertEqual(result[3].position, 380, accuracy: 1e-9)
         let centers = try AdvancedFieldPatterns.matchingCentersOffset(
             center: 300, rise: 50, angle: 30, centerGap: 40)
-        XCTAssertEqual(centers.map(\.position), [180, 280, 320, 420])
+        for (actual, expected) in zip(centers.map(\.position), [180.0, 280.0, 320.0, 420.0]) {
+            XCTAssertEqual(actual, expected, accuracy: 1e-8)
+        }
         XCTAssertThrowsError(try AdvancedFieldPatterns.matchingCentersOffset(
             center: 20, rise: 50, angle: 30, centerGap: 40))
     }
