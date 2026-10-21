@@ -210,7 +210,7 @@ struct MultiBendPlannerView: View {
             Section(l("Apple Watch")) {
                 Button(l("Send Marks to Watch")) { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
                     .disabled(marks.isEmpty || !valid)
-                Text(watchSync.status).font(.caption)
+                Text(l(watchSync.status)).font(.caption)
             }
             Section(l("Export")) {
                 Button(l("Create PDF marking sheet")) { makePDF() }.disabled(!valid || marks.isEmpty)
