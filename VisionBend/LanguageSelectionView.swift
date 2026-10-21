@@ -48,7 +48,7 @@ struct LanguageSelectionView: View {
         NavigationStack {
             VStack(spacing: 12) {
                 Text(VisionBendLocalization.text("Choose your language", language: selected)).font(.title2.bold())
-                Text("Dilini seç • اختر لغتك • Selecciona tu idioma")
+                Text("VisionBend")
                     .font(.subheadline).foregroundStyle(.secondary)
                 TextField(VisionBendLocalization.text("Search language", language: selected), text: $search)
                     .textFieldStyle(.roundedBorder).padding(.horizontal)
