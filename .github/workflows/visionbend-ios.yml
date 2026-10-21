@@ -10,6 +10,12 @@ on:
       - 'project.yml'
       - '.github/workflows/visionbend-ios.yml'
 
+# Retain only the most recent build for this branch; stale macOS builds
+# need not consume the queue when many source files are committed in sequence.
+concurrency:
+  group: visionbend-ios-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -29,8 +35,8 @@ jobs:
       - name: Build iOS simulator app (unsigned)
         working-directory: .
         run: |
-          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
-      - name: Run iOS unit tests
+          xcodebuild clean build -project VisionBend.xcodeproj -scheme VisionBend -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+      - name: Run all iOS unit and UI tests, including English app navigation
         working-directory: .
         run: |
           xcrun simctl list devices available

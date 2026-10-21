@@ -48,6 +48,9 @@ struct MultiBendPlannerView: View {
     // The initial planner examples are in millimeters, whatever the saved user unit.
     @State private var inputUnits = 0
     @State private var showAdvancedBenderOptions = false
+    @State private var measureFromFarEnd = false
+    @AppStorage("visionbend.pinnedBenderIDs") private var pinnedBenderIDs = ""
+    @AppStorage("visionbend.lastBenderID") private var lastBenderID = ""
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
 
@@ -56,10 +59,37 @@ struct MultiBendPlannerView: View {
     private var length: Double { dimension(conduitLength) ?? 0 }
     private var clearance: Double { dimension(minStraight) ?? 0 }
     private var sorted: [BendMark] { marks.sorted { $0.position < $1.position } }
+    private var readout: [BendMark] {
+        if !measureFromFarEnd { return sorted }
+        return sorted.map { mark in
+            var copy = mark
+            copy.position = length - mark.position
+            return copy
+        }.sorted { $0.position < $1.position }
+    }
+    private var benderChoices: [VerifiedBender] {
+        let pinned = Set(pinnedBenderIDs.split(separator: "|").map(String.init))
+        return VerifiedBenderCatalog.entries.sorted {
+            let one = pinned.contains($0.id), two = pinned.contains($1.id)
+            if one != two { return one }
+            return ($0.brand + $0.model + $0.tradeSize) < ($1.brand + $1.model + $1.tradeSize)
+        }
+    }
+    private var quickCheck: FieldQuickCheck.Report {
+        let item = VerifiedBenderCatalog.entries.first { $0.id == verifiedModelID }
+        return FieldQuickCheck.evaluate(
+            length: length,
+            marks: sorted.map { AdvancedFieldPatterns.Station(position: $0.position, angle: $0.angle, direction: $0.direction) },
+            minimumStraight: clearance,
+            centerlineRadius: dimension(centerlineRadius),
+            takeUp: dimension(takeUp), targetStub: dimension(desiredStub),
+            hasVerifiedReference: item?.deductInches != nil && item?.radiusInches != nil
+                && !manualSource.isEmpty)
+    }
     private var valid: Bool {
         length > 0 && clearance >= 0 &&
         FieldBendGeometry.isFeasible(markPositions: marks.map(\.position), conduitLength: length, minStraight: clearance) &&
-        marks.allSatisfy { $0.angle > 0 && $0.angle <= 90 }
+        marks.allSatisfy { $0.angle > 0 && $0.angle <= 90 } && quickCheck.canProceed
     }
 
     var body: some View {
@@ -125,11 +155,14 @@ struct MultiBendPlannerView: View {
             Section(l("Verified manufacturer profile")) {
                 Picker(l("Bender model"), selection: $verifiedModelID) {
                     Text(l("Manual / unsupported model")).tag("")
-                    ForEach(VerifiedBenderCatalog.entries) { item in
+                    ForEach(benderChoices) { item in
                         Text("\(item.brand) \(item.model) · \(item.conduit) \(item.tradeSize)").tag(item.id)
                     }
                 }
-                .onChange(of: verifiedModelID) { id in applyVerifiedModel(id) }
+                .onChange(of: verifiedModelID) { id in
+                    lastBenderID = id
+                    applyVerifiedModel(id)
+                }
                 if requiresIMCHardware {
                     Toggle(l("28008 shoe group and 13856 IMC squeeze roller installed"), isOn: $confirmedIMCHardware)
                     Text(l("Required together for 1-1/2 and 2 inch IMC. Confirm physical equipment before generating marks."))
@@ -158,7 +191,7 @@ struct MultiBendPlannerView: View {
             }
             }
             Section(l("2D marking diagram (schematic)")) {
-                BendMarkDiagram(marks: sorted, conduitLength: length)
+                BendMarkDiagram(marks: readout, conduitLength: length)
                     .frame(height: 145)
                 Text(l("Marks are measured from the starting end. The drawing shows mark positions, not actual post-bend shape."))
                     .font(.caption).foregroundStyle(.secondary)
@@ -167,17 +200,46 @@ struct MultiBendPlannerView: View {
                 BendShapePreview(marks: sorted, length: length, centerlineRadius: dimension(centerlineRadius) ?? 0, conduitOutsideDiameter: dimension(outsideDiameter) ?? 0).frame(height: 280)
                 Text(l("Theoretical shape only. Confirm bend radius and equipment calibration."))
             }
+            Section(l("QuickCheck")) {
+                HStack {
+                    Image(systemName: quickCheck.severity == .impossible ? "xmark.octagon.fill" :
+                          quickCheck.severity == .caution ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                    Text(l(quickCheck.severity == .impossible ? "Impossible" :
+                           quickCheck.severity == .caution ? "Caution" : "Preliminary pass")).font(.headline)
+                }
+                .foregroundStyle(quickCheck.severity == .impossible ? Color.red :
+                                 quickCheck.severity == .caution ? Color.orange : Color.green)
+                ForEach(quickCheck.findings.indices, id: \.self) { i in
+                    Text(l(quickCheck.findings[i].text)).font(.caption)
+                }
+                Text(l("QuickCheck is only a preflight geometry check. Confirm actual shoe marks and springback."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section(l("Bend sequence")) {
-                ForEach(sorted) { mark in
+                Toggle(l("Measure marks from opposite end"), isOn: $measureFromFarEnd)
+                Text(l("Only the measuring end changes. Bend directions do not flip automatically; recheck reference marks before bending."))
+                    .font(.caption).foregroundStyle(.orange)
+                ForEach(readout) { mark in
                     HStack {
-                        Text(String(format: "%.2f", mark.position)).monospacedDigit()
+                        Text(String(format: "%.2f %@", mark.position, unitLabel)).monospacedDigit()
                         Spacer()
-                        Text(String(format: "%.1f° %@", mark.angle, mark.direction))
+                        Text(String(format: "%.1f° %@", mark.angle, l(mark.direction)))
+                        Button {
+                            if let index = marks.firstIndex(where: { $0.id == mark.id }) {
+                                marks[index].direction = AdvancedFieldPatterns.oppositeDirection(marks[index].direction)
+                                pdfURL = nil
+                            }
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(l("Flip selected bend direction"))
                     }
                 }
                 .onDelete { indices in
-                    let ids = Set(indices.map { sorted[$0].id })
+                    let ids = Set(indices.map { readout[$0].id })
                     marks.removeAll { ids.contains($0.id) }
+                    pdfURL = nil
                 }
                 Text(valid ? "Mark spacing passes the entered minimum." : "Invalid layout: check lengths, angles and minimum straight spacing.")
                     .foregroundStyle(valid ? .green : .red)
@@ -189,7 +251,7 @@ struct MultiBendPlannerView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section(l("Step-by-step bend assistant")) {
-                let steps = sorted
+                let steps = readout
                 if steps.isEmpty {
                     Text(l("Generate or add bend marks to begin."))
                 } else {
@@ -218,7 +280,13 @@ struct MultiBendPlannerView: View {
             }
         }
         .navigationTitle(l("Multi-Bend Planner"))
-        .onAppear { adaptDimensionsToCurrentUnits() }
+        .onAppear {
+            adaptDimensionsToCurrentUnits()
+            if verifiedModelID.isEmpty && VerifiedBenderCatalog.entries.contains(where: { $0.id == lastBenderID }) {
+                verifiedModelID = lastBenderID
+                applyVerifiedModel(lastBenderID)
+            }
+        }
         .onChange(of: selectedUnits) { _ in
             adaptDimensionsToCurrentUnits()
             if !verifiedModelID.isEmpty { applyVerifiedModel(verifiedModelID) }
@@ -446,14 +514,15 @@ struct MultiBendPlannerView: View {
         let page = CGRect(x: 0, y: 0, width: 595, height: 842)
         let renderer = UIGraphicsPDFRenderer(bounds: page)
         let marksPerPage = 20
-        let pageCount = max(1, (sorted.count + marksPerPage - 1) / marksPerPage)
-        let allMarks = sorted
+        let pageCount = max(1, (readout.count + marksPerPage - 1) / marksPerPage)
+        let allMarks = readout
         let data = renderer.pdfData { context in
             for page in 0..<pageCount {
                 context.beginPage()
                 let title = "VisionBend - Multi-Bend Marking Sheet (\(page + 1)/\(pageCount))"
             title.draw(at: CGPoint(x: 36, y: 38), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 18)])
             let info = String(format: "Conduit length: %.2f %@   Minimum mark spacing: %.2f %@", length, unitLabel, clearance, unitLabel)
+                + (measureFromFarEnd ? " · REVERSED MEASUREMENT END" : "")
             info.draw(at: CGPoint(x: 36, y: 76), withAttributes: [.font: UIFont.systemFont(ofSize: 12)])
             let left: CGFloat = 50
             let width: CGFloat = 495

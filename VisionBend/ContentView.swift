@@ -6,6 +6,7 @@ struct ContentView: View {
     @AppStorage("visionbend.language") private var language = "system"
     @AppStorage("visionbend.languageChosen") private var languageChosen = false
     @AppStorage("visionbend.units") private var units = 0
+    @AppStorage("visionbend.inputStyle.slider") private var useSliders = false
     @State private var previousUnit = 0
     @State private var showHistory = false
     @State private var showSettings = false
@@ -17,6 +18,7 @@ struct ContentView: View {
     @State private var showReference = false
     @State private var showMultiBend = false
     @State private var showCutPlanner = false
+    @State private var showAdvancedPatterns = false
     @AppStorage("visionbend.mode") private var mode = 0
     @AppStorage("visionbend.lastHeight") private var height = "10"
     @AppStorage("visionbend.lastAngle") private var angle = "30"
@@ -30,7 +32,26 @@ struct ContentView: View {
     private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { VisionBendLocalization.text(en, turkish: tr, language: language) }
     private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
+    private func localizedFormat(_ template: String, _ arguments: CVarArg...) -> String {
+        String(format: template, locale: activeLocale, arguments: arguments)
+    }
     private var selectedMode: Int { names.indices.contains(mode) ? mode : 0 }
+    private var calculatorNumericValid: Bool {
+        guard let first = numericInput(height), let second = numericInput(angle),
+              first.isFinite, second.isFinite else { return false }
+        switch selectedMode {
+        case 0, 2, 6: return first > 0 && second > 0 && second < 90
+        case 1: return first > 0 && second > 0 && second < 180
+        case 3: return first > 0 && second > 0 && second <= 180
+        case 4:
+            guard let theta = Double(rollingAngle.replacingOccurrences(of: ",", with: ".")) else { return false }
+            return first >= 0 && second >= 0 && (first > 0 || second > 0)
+                && theta.isFinite && theta > 0 && theta < 90
+        case 5: return first > second && second >= 0
+        case 7: return first > 0 && second > 0
+        default: return false
+        }
+    }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
         switch mode {
@@ -80,6 +101,16 @@ struct ContentView: View {
                 angle = String(format: "%.4f", oldUnit.convert(second, to: newUnit))
             }
             output = ""; previousUnit = newValue
+        }
+        .sheet(isPresented: $showAdvancedPatterns) {
+            NavigationStack {
+                AdvancedPatternToolboxView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showAdvancedPatterns = false }
+                        }
+                    }
+            }
         }
         .sheet(isPresented: $showCutPlanner) {
             NavigationStack {
@@ -249,11 +280,35 @@ struct ContentView: View {
                         .font(.subheadline.bold())
                     TextField(secondLabel, text: $angle).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                         .onChange(of: angle) { _ in output = ""; errorMessage = "" }
+                    Toggle(t("Kaydırıcı ile giriş", "Slider input"), isOn: $useSliders)
+                        .font(.subheadline)
+                    if useSliders && [0, 2, 3, 6].contains(mode) {
+                        Slider(value: Binding(
+                            get: { min(85, max(5, Double(angle.replacingOccurrences(of: ",", with: ".")) ?? 30)) },
+                            set: { angle = String(format: "%.1f", $0) }),
+                               in: 5...85, step: 1)
+                        .accessibilityLabel(t("Büküm açısı kaydırıcısı", "Bend angle slider"))
+                    }
                     if mode == 4 {
                         Text(t("Büküm açısı (derece)", "Bend angle (degrees)")).font(.subheadline.bold())
                         TextField(t("Örnek: 30", "Example: 30"), text: $rollingAngle)
                             .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                             .onChange(of: rollingAngle) { _ in output = ""; errorMessage = "" }
+                    }
+                    if height.isEmpty || angle.isEmpty {
+                        Label(t("Ölçüleri girin; QuickCheck girişleri kontrol edecek.",
+                                "Enter measurements for QuickCheck."),
+                              systemImage: "info.circle")
+                            .foregroundStyle(.secondary).font(.caption)
+                    } else if !calculatorNumericValid {
+                        Label(t("QuickCheck: Geçersiz ölçü.", "QuickCheck: Invalid number."),
+                              systemImage: "xmark.octagon.fill")
+                            .foregroundStyle(.red).font(.caption)
+                    } else {
+                        Label(t("QuickCheck: Ölçüler sayısal olarak uygun. Bükücü kılavuzuyla doğrulayın.",
+                                "QuickCheck: Numeric input valid. Confirm against bender manual."),
+                              systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange).font(.caption)
                     }
                     Button(action: calculate) {
                         Label(t("Hesapla", "Calculate"), systemImage: "equal")
@@ -295,6 +350,7 @@ struct ContentView: View {
     private var planningPage: some View {
         List {
             Button { showMultiBend = true } label: { Label(t("Çoklu büküm ve 2D plan", "Multi-bend & 2D planner"), systemImage: "point.topleft.down.curvedto.point.bottomright.up") }
+            Button { showAdvancedPatterns = true } label: { Label(t("Gelişmiş büküm çeşitleri", "Advanced bend patterns"), systemImage: "point.3.connected.trianglepath.dotted") }
             Button { showCutPlanner = true } label: { Label(t("Boru kesim optimizasyonu", "Conduit cut optimizer"), systemImage: "scissors") }
             Button { showReference = true } label: { Label(t("Bükücü referans ve katalog", "Bender reference"), systemImage: "books.vertical") }
         }.tint(accent)
@@ -374,16 +430,16 @@ struct ContentView: View {
             if mode == 0 {
                 let spacing = try BendCalculations.offsetSpacing(rise: rise, angleDegrees: degrees)
                 let shrink = try BendCalculations.offsetShrink(rise: rise, angleDegrees: degrees)
-                output = String(format: t("İşaretler arası mesafe: %.2f %@\nTeorik kısalma: %.2f %@", "Mark spacing: %.2f %@\nTheoretical shrink: %.2f %@"), spacing, unitName, shrink, unitName)
+                output = localizedFormat(t("İşaretler arası mesafe: %.2f %@\nTeorik kısalma: %.2f %@", "Mark spacing: %.2f %@\nTheoretical shrink: %.2f %@"), spacing, unitName, shrink, unitName)
             } else if mode == 1 {
                 let distance = try BendCalculations.saddleOuterMarkDistance(height: rise, centerAngleDegrees: degrees)
-                output = String(format: t("Merkezden dış işarete: %.2f %@\nDış büküm açısı: %.1f°", "Center to outer mark: %.2f %@\nOuter bend angle: %.1f°"), distance, unitName, degrees / 2)
+                output = localizedFormat(t("Merkezden dış işarete: %.2f %@\nDış büküm açısı: %.1f°", "Center to outer mark: %.2f %@\nOuter bend angle: %.1f°"), distance, unitName, degrees / 2)
             } else if mode == 2 {
                 let travel = try MoreBendCalculations.kickTravel(rise: rise, angleDegrees: degrees)
-                output = String(format: t("Kick yatay ilerleme: %.2f %@", "Kick horizontal travel: %.2f %@"), travel, unitName)
+                output = localizedFormat(t("Kick yatay ilerleme: %.2f %@", "Kick horizontal travel: %.2f %@"), travel, unitName)
             } else if mode == 3 {
                 let arc = try MoreBendCalculations.arcLength(centerlineRadius: rise, angleDegrees: degrees)
-                output = String(format: t("Merkez hattı yay uzunluğu: %.2f %@", "Centerline arc length: %.2f %@"), arc, unitName)
+                output = localizedFormat(t("Merkez hattı yay uzunluğu: %.2f %@", "Centerline arc length: %.2f %@"), arc, unitName)
             } else if mode == 4 {
                 let roll = try MoreBendCalculations.rollingOffset(horizontal: rise, vertical: degrees)
                 guard let rollDegrees = Double(rollingAngle.replacingOccurrences(of: ",", with: ".")), rollDegrees.isFinite else {
@@ -392,22 +448,23 @@ struct ContentView: View {
                 }
                 let spacing = try MoreBendCalculations.rollingOffsetMarkSpacing(horizontal: rise, vertical: degrees, angleDegrees: rollDegrees)
                 let rotation = atan2(degrees, rise) * 180 / Double.pi
-                output = String(format: t("Çapraz kaçıklık: %.2f %@\nTeorik işaret aralığı: %.2f %@\nDönüş açısı: %.1f°", "True offset: %.2f %@\nTheoretical mark spacing: %.2f %@\nRoll angle: %.1f°"), roll, unitName, spacing, unitName, rotation)
+                output = localizedFormat(t("Çapraz kaçıklık: %.2f %@\nTeorik işaret aralığı: %.2f %@\nDönüş açısı: %.1f°", "True offset: %.2f %@\nTheoretical mark spacing: %.2f %@\nRoll angle: %.1f°"), roll, unitName, spacing, unitName, rotation)
             } else if mode == 5 {
                 let mark = try ExtraBendCalculations.ninetyDegreeStubMark(desiredStub: rise, takeUp: degrees)
-                output = String(format: t("90° büküm işareti: %.2f %@", "90° stub mark: %.2f %@"), mark, unitName)
+                output = localizedFormat(t("90° büküm işareti: %.2f %@", "90° stub mark: %.2f %@"), mark, unitName)
             } else if mode == 6 {
                 let spacing = try ExtraBendCalculations.fourPointSaddleMarkSpacing(clearance: rise, bendAngleDegrees: degrees)
-                output = String(format: t("Her offset için işaret aralığı: %.2f %@", "Each offset mark spacing: %.2f %@"), spacing, unitName)
+                output = localizedFormat(t("Her offset için işaret aralığı: %.2f %@", "Each offset mark spacing: %.2f %@"), spacing, unitName)
             } else if mode == 7 {
                 let travel = try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: rise, secondLeg: degrees)
                 let rotation = try AdvancedBendCalculations.compoundNinetyRotation(firstLeg: rise, secondLeg: degrees)
-                output = String(format: t("Düzlemsel köşegen: %.2f %@\nYön açısı: %.1f°\nYalnızca geometri — gerçek büküm işaretleri için yarıçap, bükücü ve boru çapını doğrulayın.", "Planar diagonal: %.2f %@\nOrientation: %.1f°\nGeometry only — physical bend marks require verified radius, bender and conduit size."), travel, unitName, rotation)
+                output = localizedFormat(t("Düzlemsel köşegen: %.2f %@\nYön açısı: %.1f°\nYalnızca geometri — gerçek büküm işaretleri için yarıçap, bükücü ve boru çapını doğrulayın.", "Planar diagonal: %.2f %@\nOrientation: %.1f°\nGeometry only — physical bend marks require verified radius, bender and conduit size."), travel, unitName, rotation)
             } else {
                 errorMessage = t("Büküm türünü yeniden seçin.", "Unknown calculator mode. Select a mode again.")
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = t("Geçersiz ölçü veya büküm açısı. Ölçüleri kontrol edin.",
+                             "Invalid dimensions or bend angle. Check your measurements.")
         }
         if units == 2, !output.isEmpty {
             output += "\n" + t("İlk ölçü (kesirli inç): ", "First value (fractional inches): ") + AdvancedBendCalculations.fractionalInches(rise)
