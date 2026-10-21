@@ -1,0 +1,36 @@
+name: VisionBend field geometry Swift smoke tests
+on:
+  push:
+    branches:
+      - feat/field-bend-quickcheck-five-improvements-20261021
+    paths:
+      - 'VisionBend/AdvancedFieldPatterns.swift'
+      - 'VisionBend/FieldQuickCheck.swift'
+      - 'VisionBend/BendCalculations.swift'
+      - 'VisionBend/MoreBendCalculations.swift'
+      - 'VisionBend/ExtraBendCalculations.swift'
+      - 'tools/field_math_test_runner.swift'
+      - '.github/workflows/visionbend-field-math.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Swift toolchain
+        run: swift --version
+      - name: Compile production Swift math and execute field checks
+        run: |
+          swiftc -O -o /tmp/visionbend-field-math \
+            VisionBend/BendCalculations.swift \
+            VisionBend/MoreBendCalculations.swift \
+            VisionBend/ExtraBendCalculations.swift \
+            VisionBend/AdvancedFieldPatterns.swift \
+            VisionBend/FieldQuickCheck.swift \
+            tools/field_math_test_runner.swift
+          /tmp/visionbend-field-math
