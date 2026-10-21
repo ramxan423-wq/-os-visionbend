@@ -48,6 +48,7 @@ struct MultiBendPlannerView: View {
     @AppStorage("visionbend.units") private var selectedUnits = 0
     // The initial planner examples are in millimeters, whatever the saved user unit.
     @State private var inputUnits = 0
+    @State private var showAdvancedBenderOptions = false
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
 
@@ -67,10 +68,6 @@ struct MultiBendPlannerView: View {
             Section("Conduit (all values in " + unitLabel + ")") {
                 TextField(l("Conduit length"), text: $conduitLength).keyboardType(.decimalPad)
                 TextField(l("Minimum straight between marks"), text: $minStraight).keyboardType(.decimalPad)
-            }
-            Section(l("Bender geometry")) {
-                TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
-                TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
             }
             Section(l("Shape")) {
                 Picker(l("Shape"), selection: $preset) {
@@ -118,6 +115,14 @@ struct MultiBendPlannerView: View {
                 Button(l("Add Mark")) { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
             }
+            Section {
+                Toggle(VisionBendLocalization.text("Advanced bender options", turkish: "Gelişmiş bükücü ayarları", language: language), isOn: $showAdvancedBenderOptions)
+            }
+            if showAdvancedBenderOptions {
+                Section(l("Bender geometry")) {
+                    TextField("Centerline radius (" + unitLabel + ")", text: $centerlineRadius).keyboardType(.decimalPad)
+                    TextField("Actual outside diameter (" + unitLabel + ")", text: $outsideDiameter).keyboardType(.decimalPad)
+                }
             Section(l("Verified manufacturer profile")) {
                 Picker(l("Bender model"), selection: $verifiedModelID) {
                     Text(l("Manual / unsupported model")).tag("")
@@ -151,6 +156,7 @@ struct MultiBendPlannerView: View {
                 Button(l("Add Calibrated Stub Mark")) { addCalibratedMark() }
                 Text(l("Use only exact-model values confirmed in the manufacturer manual. Reference marks differ between benders."))
                     .font(.caption).foregroundStyle(.secondary)
+            }
             }
             Section(l("2D marking diagram (schematic)")) {
                 BendMarkDiagram(marks: sorted, conduitLength: length)
