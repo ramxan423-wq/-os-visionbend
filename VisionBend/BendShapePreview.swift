@@ -4,6 +4,7 @@ import simd
 
 /// Geometric preview: bend stations are idealized centerline pivots, not mandrel-radius simulations.
 struct BendShapePreview: View {
+    @AppStorage("visionbend.language") private var language = "system"
     let marks: [BendMark]
     let length: Double
     var centerlineRadius: Double = 0
@@ -12,7 +13,7 @@ struct BendShapePreview: View {
     var body: some View {
         SceneView(scene: makeScene(), options: [.allowsCameraControl, .autoenablesDefaultLighting])
             .background(Color(uiColor: .secondarySystemBackground))
-            .accessibilityLabel("Rotatable theoretical three-dimensional bend centerline")
+            .accessibilityLabel(VisionBendLocalization.text("Rotatable theoretical three-dimensional bend centerline", language: language))
     }
 
     private func makeScene() -> SCNScene {
