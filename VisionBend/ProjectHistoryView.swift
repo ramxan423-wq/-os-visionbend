@@ -76,7 +76,7 @@ struct ProjectHistoryView: View {
                         Text(bend.mode).font(.caption).foregroundStyle(.secondary)
                         Text(bend.date, style: .date).font(.caption).foregroundStyle(.secondary)
                         Text(bend.result).font(.body.monospacedDigit())
-                        Text("Inputs: \(bend.firstValue.formatted()) / \(bend.secondValue.formatted())")
+                        Text(l("Inputs") + ": \(bend.firstValue.formatted()) / \(bend.secondValue.formatted())")
                             .font(.caption).foregroundStyle(.secondary)
                         if let notes = bend.notes, !notes.isEmpty { Text(notes).font(.caption) }
                         Button(l("Export / Share")) { exporting = bend }
@@ -94,21 +94,21 @@ struct ProjectHistoryView: View {
             .sheet(item: $exporting) { bend in
                 NavigationStack {
                     ProjectExportView(project: BendProjectExport(title: bend.projectName ?? bend.mode, mode: bend.mode, firstValue: bend.firstValue, secondValue: bend.secondValue, result: bend.result, notes: bend.notes))
-                        .navigationTitle("Export Project")
-                        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { exporting = nil } } }
+                        .navigationTitle(l("Export Project"))
+                        .toolbar { ToolbarItem(placement: .confirmationAction) { Button(l("Done")) { exporting = nil } } }
                 }
             }
             .sheet(item: $editing) { bend in
                 NavigationStack {
                     Form {
-                        TextField("Project name", text: $projectName)
-                        TextField("Notes", text: $notes, axis: .vertical)
+                        TextField(l("Project name"), text: $projectName)
+                        TextField(l("Notes"), text: $notes, axis: .vertical)
                     }
-                    .navigationTitle("Edit Project")
+                    .navigationTitle(l("Edit Project"))
                     .toolbar {
-                        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { editing = nil } }
+                        ToolbarItem(placement: .cancellationAction) { Button(l("Cancel")) { editing = nil } }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") {
+                            Button(l("Save")) {
                                 history.update(id: bend.id, projectName: projectName, notes: notes)
                                 editing = nil
                             }
