@@ -131,7 +131,8 @@ enum VisionBendLocalization {
     static func text(_ english: String, turkish: String? = nil, language: String) -> String {
         let code = language == "system" ? (Locale.preferredLanguages.first ?? "en") : language
         let normalized = code == "zh-Hans" || code == "zh-Hant" || code == "zh-HK" ? (code == "zh-HK" ? "zh-Hant" : code) : String(code.split(separator: "-").first ?? "en")
-        if let translated = strings[english]?[code] ?? strings[english]?[normalized] {
+        if let translated = strings[english]?[code] ?? strings[english]?[normalized]
+            ?? VisionBendMoreTranslations.text(english, code: normalized) {
             return translated
         }
         return normalized == "tr" ? (turkish ?? english) : english
