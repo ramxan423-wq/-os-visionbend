@@ -24,6 +24,8 @@ jobs:
           }
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Generate App Store icon asset catalog
+        run: python3 tools/generate_app_icon.py
       - name: Generate project
         run: xcodegen generate
       - name: Ensure OpenSSL 3 for PKCS#12 compatibility
