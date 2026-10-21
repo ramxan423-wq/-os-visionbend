@@ -20,7 +20,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify 20 languages and list untranslated strings
         run: python3 tools/audit_localizations.py
+      - name: Require zero untranslated strings in every selected language
+        run: python3 tools/audit_localizations.py --strict
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: VisionBend-20-language-audit
           path: localization-audit.json
