@@ -18,7 +18,6 @@ struct MultiBendPlannerView: View {
     @State private var direction = "Up"
     @State private var marks: [BendMark] = []
     @State private var message = ""
-    @StateObject private var watchSync = PhoneWatchSync.shared
     @State private var verifiedModelID = ""
     @State private var confirmedIMCHardware = false
     @State private var manufacturer = ""
@@ -206,11 +205,6 @@ struct MultiBendPlannerView: View {
                         Button(l("Next")) { guideStep = min(steps.count - 1, guideStep + 1) }.disabled(guideStep >= steps.count - 1)
                     }
                 }
-            }
-            Section(l("Apple Watch")) {
-                Button(l("Send Marks to Watch")) { watchSync.send(projectName: "VisionBend Plan", marks: sorted, units: unitLabel) }
-                    .disabled(marks.isEmpty || !valid)
-                Text(l(watchSync.status)).font(.caption)
             }
             Section(l("Export")) {
                 Button(l("Create PDF marking sheet")) { makePDF() }.disabled(!valid || marks.isEmpty)
