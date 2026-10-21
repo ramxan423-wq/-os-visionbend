@@ -24,7 +24,7 @@ struct SubscriptionView: View {
             }
             Section {
                 Button(l("Restore Purchases")) { Task { await store.restore() } }
-                if let error = store.errorMessage { Text(error).foregroundStyle(.secondary) }
+                if let error = store.errorMessage { Text(l(error)).foregroundStyle(.secondary) }
             }
         }
         .navigationTitle(l("Premium"))
