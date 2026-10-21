@@ -31,6 +31,16 @@ final class EnglishLocalizationTests: XCTestCase {
         XCTAssertEqual(VisionBendLocalization.text(key, turkish: "Geçersiz ölçü.", language: "tr"),
                        "Geçersiz ölçü.")
     }
+    func testEnglishDecimalFormattingUsesSelectedLocaleNotTurkishDevice() {
+        let english = String(format: "Result: %.2f %@",
+                             locale: Locale(identifier: "en_US"),
+                             arguments: [12.5, "mm"])
+        XCTAssertEqual(english, "Result: 12.50 mm")
+        let turkish = String(format: "Result: %.2f %@",
+                             locale: Locale(identifier: "tr_TR"),
+                             arguments: [12.5, "mm"])
+        XCTAssertNotEqual(turkish, english)
+    }
     func testEnglishFormatStringPreservesPlaceholders() {
         let key = "Mark spacing: %.2f %@\nTheoretical shrink: %.2f %@"
         let localized = VisionBendLocalization.text(key, language: "en")
