@@ -4,7 +4,9 @@ on:
     branches:
       - feat/field-bend-quickcheck-five-improvements-20261021
     paths:
-      - 'VisionBend/AdvancedFieldPatterns.swift'
+      - 'VisionBend/**'
+      - 'VisionBendTests/**'
+      - 'VisionBendUITests/**'
       - 'VisionBend/FieldQuickCheck.swift'
       - 'VisionBend/BendCalculations.swift'
       - 'VisionBend/MoreBendCalculations.swift'
@@ -26,6 +28,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check Swift toolchain
         run: swift --version
+      - name: Parse all iOS SwiftUI and XCTest sources (syntax only)
+        run: |
+          swiftc -frontend -parse VisionBend/*.swift VisionBendTests/*.swift VisionBendUITests/*.swift
       - name: Compile production Swift math and execute field checks
         run: |
           swiftc -O -o /tmp/visionbend-field-math \
