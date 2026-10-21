@@ -2,7 +2,7 @@ import Foundation
 
 enum BendCalculationError: LocalizedError {
     case invalidInput
-    var errorDescription: String? { "Pozitif ölçüler ve 0–90° arasında bir açı girin." }
+    var errorDescription: String? { "Enter positive dimensions and a valid bend angle." }
 }
 
 enum BendCalculations {
