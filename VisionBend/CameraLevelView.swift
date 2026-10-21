@@ -33,7 +33,7 @@ struct CameraLevelView: View {
                             UIApplication.shared.open(url)
                         }
                     }
-                }.padding()
+                }.padding().foregroundStyle(.white)
             }
             VStack {
                 Spacer()
@@ -57,7 +57,7 @@ struct CameraLevelView: View {
                     .disabled(!motionAvailable)
                     TextField(t("Hedef açı (derece)", "Target angle (degrees)"), text: $targetAngle)
                         .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
-                    if let target = Double(targetAngle), target.isFinite, target >= 0, target <= 180 {
+                    if let target = Double(targetAngle.replacingOccurrences(of: ",", with: ".")), target.isFinite, target >= 0, target <= 180 {
                         Text(String(format: t("Hedef açı farkı: %+.1f°", "Device pitch difference: %+.1f°"), abs(pitch - pitchZero) - target))
                             .font(.headline.monospacedDigit())
                     }
@@ -67,6 +67,7 @@ struct CameraLevelView: View {
                     Text(t("Bu araç telefonun açısını ölçer; borunun açısını otomatik ölçmez. Telefonu boruyla hizalayın ve fiziksel açıölçerle doğrulayın.", "This measures PHONE orientation, not the conduit angle automatically. Align phone with conduit and verify with a physical angle finder."))
                         .font(.caption)
                 }
+                .foregroundStyle(.white)
                 .padding()
                 .frame(maxWidth: .infinity)
                 .background(.black.opacity(0.75))
