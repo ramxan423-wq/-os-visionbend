@@ -3,22 +3,29 @@ import SwiftUI
 /// First-launch language choice. Language names are autonyms, so they remain
 /// readable even before a locale has been selected.
 enum VisionBendLanguages {
+    // Exactly 20 selectable app-interface languages, including English.
+    // Additional choices must not be presented before full UI localization QA.
     static let supported: [(code: String, name: String)] = [
-        ("en","English"),("en-GB","English (UK)"),("en-AU","English (Australia)"),("en-CA","English (Canada)"),("zh-Hant","繁體中文"),("zh-HK","繁體中文（香港）"),("fr-CA","Français (Canada)"),("zh-Hans","简体中文"),("hi","हिन्दी"),("es","Español"),
-        ("ar","العربية"),("fr","Français"),("bn","বাংলা"),("pt","Português"),
-        ("ru","Русский"),("ur","اردو"),("id","Bahasa Indonesia"),("de","Deutsch"),
-        ("ja","日本語"),("sw","Kiswahili"),("mr","मराठी"),("te","తెలుగు"),
-        ("tr","Türkçe"),("ta","தமிழ்"),("vi","Tiếng Việt"),("ko","한국어"),
-        ("it","Italiano"),("th","ไทย"),("gu","ગુજરાતી"),("fa","فارسی"),
-        ("pl","Polski"),("uk","Українська"),("pa","ਪੰਜਾਬੀ"),("ml","മലയാളം"),
-        ("kn","ಕನ್ನಡ"),("or","ଓଡ଼ିଆ"),("my","မြန်မာ"),("ro","Română"),
-        ("nl","Nederlands"),("hu","Magyar"),("el","Ελληνικά"),("cs","Čeština"),
-        ("sv","Svenska"),("fi","Suomi"),("da","Dansk"),("no","Norsk"),
-        ("he","עברית"),("ku","Kurdî"),("az","Azərbaycanca"),("uz","Oʻzbekcha"),
-        ("kk","Қазақша"),("ne","नेपाली"),("si","සිංහල"),("km","ខ្មែរ"),
-        ("lo","ລາວ"),("am","አማርኛ"),("ha","Hausa"),("yo","Yorùbá"),
-        ("ig","Igbo"),("zu","isiZulu"),("af","Afrikaans"),("ms","Bahasa Melayu"),
-        ("fil","Filipino"),("sr","Српски"),("bg","Български"),("hr","Hrvatski")
+        ("en", "English"),
+        ("tr", "Türkçe"),
+        ("es", "Español"),
+        ("fr", "Français"),
+        ("de", "Deutsch"),
+        ("ar", "العربية"),
+        ("pt", "Português"),
+        ("it", "Italiano"),
+        ("ru", "Русский"),
+        ("fa", "فارسی"),
+        ("hi", "हिन्दी"),
+        ("zh-Hans", "简体中文"),
+        ("zh-Hant", "繁體中文"),
+        ("ja", "日本語"),
+        ("ko", "한국어"),
+        ("id", "Bahasa Indonesia"),
+        ("da", "Dansk"),
+        ("sv", "Svenska"),
+        ("nl", "Nederlands"),
+        ("fi", "Suomi")
     ]
     static func name(for code: String) -> String {
         supported.first(where: { $0.code == code })?.name ?? "English"
@@ -41,7 +48,7 @@ struct LanguageSelectionView: View {
         NavigationStack {
             VStack(spacing: 12) {
                 Text(VisionBendLocalization.text("Choose your language", language: selected)).font(.title2.bold())
-                Text("Dilini seç • اختر لغتك • Selecciona tu idioma")
+                Text("VisionBend")
                     .font(.subheadline).foregroundStyle(.secondary)
                 TextField(VisionBendLocalization.text("Search language", language: selected), text: $search)
                     .textFieldStyle(.roundedBorder).padding(.horizontal)
