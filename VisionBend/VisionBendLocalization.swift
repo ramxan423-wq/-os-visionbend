@@ -135,6 +135,12 @@ enum VisionBendLocalization {
             ?? VisionBendMoreTranslations.text(english, code: normalized) {
             return translated
         }
-        return normalized == "tr" ? (turkish ?? english) : english
+        // The explicitly authored Turkish string in t(turkish, english)
+        // is preferable to a machine-translated generic fallback.
+        if normalized == "tr", let turkish { return turkish }
+        if let draft = VisionBendGeneratedLocalization.text(english, code: normalized) {
+            return draft
+        }
+        return english
     }
 }
