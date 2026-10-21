@@ -6,6 +6,7 @@ on:
     paths:
       - 'VisionBend/**'
       - 'VisionBendTests/**'
+      - 'VisionBendUITests/**'
       - 'VisionBendWatch/**'
       - 'project.yml'
       - '.github/workflows/visionbend-ios.yml'
