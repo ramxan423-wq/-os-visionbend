@@ -10,7 +10,7 @@ struct SubscriptionView: View {
         List {
             Section(l("Subscriptions")) {
                 if store.products.isEmpty {
-                    Text("No subscriptions available. Products must first be configured in App Store Connect.")
+                    Text(l("No subscriptions available. Products must first be configured in App Store Connect."))
                         .foregroundStyle(.secondary)
                 }
                 ForEach(store.products, id: \.id) { product in
@@ -24,10 +24,10 @@ struct SubscriptionView: View {
             }
             Section {
                 Button(l("Restore Purchases")) { Task { await store.restore() } }
-                if let error = store.errorMessage { Text(error).foregroundStyle(.secondary) }
+                if let error = store.errorMessage { Text(l(error)).foregroundStyle(.secondary) }
             }
         }
-        .navigationTitle("Premium")
+        .navigationTitle(l("Premium"))
         .task { await store.load() }
     }
 }

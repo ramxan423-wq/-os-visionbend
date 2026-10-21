@@ -36,22 +36,22 @@ struct BenderReferenceView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.brand + " " + item.model).font(.headline)
                         Text(item.conduit + " " + item.tradeSize)
-                        if let deduct = item.deductInches { Text(String(format: "90° deduct: %.3f in", deduct)) }
-                        if let radius = item.radiusInches { Text(String(format: "Centerline radius: %.3f in", radius)) }
-                        Text(item.notes).font(.caption)
-                        if let url = URL(string: item.sourceURL) { Link("Official manufacturer source", destination: url) }
+                        if let deduct = item.deductInches { Text(String(format: l("90° deduct: %.3f in"), deduct)) }
+                        if let radius = item.radiusInches { Text(String(format: l("Centerline radius: %.3f in"), radius)) }
+                        Text(l(item.notes)).font(.caption)
+                        if let url = URL(string: item.sourceURL) { Link(l("Official manufacturer source"), destination: url) }
                     }
                 }
-                Text("Only the listed model and size combinations are verified. Other models require exact manufacturer documentation.")
+                Text(l("Only the listed model and size combinations are verified. Other models require exact manufacturer documentation."))
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section(l("Bender and conduit")) {
                 Picker(l("Manufacturer"), selection: $manufacturer) {
-                    ForEach(brands, id: \.self) { Text($0) }
+                    ForEach(brands, id: \.self) { Text(l($0)).tag($0) }
                 }
                 TextField(l("Exact model / part number"), text: $model)
                 Picker(l("Conduit type"), selection: $conduitType) {
-                    ForEach(conduitTypes, id: \.self) { Text($0) }
+                    ForEach(conduitTypes, id: \.self) { Text(l($0)).tag($0) }
                 }
                 TextField(l("Conduit trade size"), text: $conduitSize)
                 TextField(l("Manual take-up (selected units)"), text: $takeUp).keyboardType(.decimalPad)
@@ -62,20 +62,20 @@ struct BenderReferenceView: View {
                 if !message.isEmpty { Text(message).font(.caption) }
             }
             Section(l("Saved bender profiles")) {
-                if profiles.isEmpty { Text("No saved profiles").foregroundStyle(.secondary) }
+                if profiles.isEmpty { Text(l("No saved profiles")).foregroundStyle(.secondary) }
                 ForEach(profiles) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.manufacturer + " " + item.model).font(.headline)
                         Text(item.conduitType + " " + item.conduitSize)
-                        Text("Take-up: " + item.takeUp + " · Radius: " + item.radius)
-                        if !item.source.isEmpty { Text("Source: " + item.source).font(.caption) }
+                        Text(l("Take-up") + ": " + item.takeUp + " · " + l("Radius") + ": " + item.radius)
+                        if !item.source.isEmpty { Text(l("Source") + ": " + item.source).font(.caption) }
                     }
                 }
                 .onDelete { offsets in profiles.remove(atOffsets: offsets); persist() }
             }
             Section(l("Important")) {
-                Text("These are user-entered values, NOT a manufacturer-verified catalogue. Check exact model, conduit size and the official manual before bending.")
-                Text("PVC requires its own heating and minimum-radius instructions. Do not apply metal conduit take-up automatically.")
+                Text(l("These are user-entered values, NOT a manufacturer-verified catalogue. Check exact model, conduit size and the official manual before bending."))
+                Text(l("PVC requires its own heating and minimum-radius instructions. Do not apply metal conduit take-up automatically."))
             }
         }
         .navigationTitle(l("Bender Reference"))
@@ -88,12 +88,12 @@ struct BenderReferenceView: View {
               !conduitSize.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let t = Double(takeUp.replacingOccurrences(of: ",", with: ".")), t.isFinite, t >= 0,
               let rad = Double(radius.replacingOccurrences(of: ",", with: ".")), rad.isFinite, rad > 0 else {
-            message = "Enter a model, conduit size, nonnegative take-up and positive radius."
+            message = l("Enter a model, conduit size, nonnegative take-up and positive radius.")
             return
         }
         profiles.insert(BenderProfile(manufacturer: manufacturer, model: model, conduitType: conduitType, conduitSize: conduitSize, takeUp: takeUp, radius: radius, notes: notes, source: source), at: 0)
         persist()
-        message = "Profile saved on this device."
+        message = l("Profile saved on this device.")
     }
 
     private func persist() {

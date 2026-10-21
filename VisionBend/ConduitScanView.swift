@@ -78,7 +78,7 @@ struct ConduitScanView: View {
                 }
                 DispatchQueue.main.async {
                     measuredPixels = widthPixels
-                    result = candidates.isEmpty ? "No elongated object detected." : String(format: l("Possible conduit shape detected (%d candidates). Confirm manually."), candidates.count)
+                    result = candidates.isEmpty ? l("No elongated object detected.") : String(format: l("Possible conduit shape detected (%d candidates). Confirm manually."), candidates.count)
                 }
             } catch {
                 DispatchQueue.main.async { result = error.localizedDescription }

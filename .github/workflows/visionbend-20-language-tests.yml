@@ -1,0 +1,40 @@
+name: VisionBend 20 iPhone language screen tests
+
+on:
+  push:
+    branches:
+      - feat/visionbend-20-language-complete-20261021
+    paths:
+      - "VisionBendUITests/VisionBendAllLanguagesUITests.swift"
+      - ".github/workflows/visionbend-20-language-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  launch-all-20-locales:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate app icon
+        run: python3 tools/generate_app_icon.py
+      - name: Generate project
+        run: xcodegen generate
+      - name: Launch every main screen in all 20 languages
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available | grep 'iPhone ' | grep -Eo '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}' | head -n 1)
+          test -n "$DEVICE_ID"
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend \
+            -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -only-testing:VisionBendUITests/VisionBendAllLanguagesUITests \
+            -resultBundlePath All20Languages.xcresult CODE_SIGNING_ALLOWED=NO test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VisionBend-all-20-language-screen-tests
+          path: All20Languages.xcresult
+          if-no-files-found: ignore

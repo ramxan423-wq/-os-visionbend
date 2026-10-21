@@ -1,0 +1,28 @@
+name: VisionBend 20-language coverage report
+on:
+  push:
+    branches:
+      - feat/visionbend-20-language-complete-20261021
+    paths:
+      - "VisionBend/**"
+      - "tools/audit_localizations.py"
+      - ".github/workflows/visionbend-localization-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify 20 languages and list untranslated strings
+        run: python3 tools/audit_localizations.py
+      - name: Require zero untranslated strings in every selected language
+        run: python3 tools/audit_localizations.py --strict
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VisionBend-20-language-audit
+          path: localization-audit.json

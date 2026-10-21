@@ -17,7 +17,7 @@ struct ARMeasureView: View {
                         Image(systemName: "plus").font(.title).foregroundStyle(.orange)
                             .allowsHitTesting(false)
                     }
-                Text(message).font(.footnote)
+                Text(VisionBendLocalization.text(message, language: language)).font(.footnote)
                 if points.count == 2 {
                     Text(String(format: t("Mesafe: %.1f mm", "Distance: %.1f mm"), simd_distance(points[0], points[1]) * 1000))
                         .font(.title3.monospacedDigit())
@@ -34,10 +34,11 @@ struct ARMeasureView: View {
 }
 
 private struct ContentUnavailableAR: View {
+    @AppStorage("visionbend.language") private var language = "system"
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "iphone.slash").font(.largeTitle)
-            Text("AR world tracking is not available on this device.")
+            Text(VisionBendLocalization.text("AR world tracking is not available on this device.", language: language))
         }.padding()
     }
 }
