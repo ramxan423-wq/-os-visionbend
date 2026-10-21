@@ -1,0 +1,98 @@
+name: VisionBend latest real iPhone screenshots
+
+on:
+  push:
+    branches:
+      - qa/visionbend-latest-screenshots-20261021
+    paths:
+      - 'VisionBendUITests/VisionBendLatestScreenshotsUITests.swift'
+      - '.github/workflows/visionbend-latest-screenshots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  latest-screenshots:
+    runs-on: macos-15
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare iOS build prerequisites
+        run: |
+          brew install xcodegen
+          python3 tools/generate_app_icon.py
+          xcodegen generate
+      - name: Clean build genuine latest app
+        run: |
+          xcodebuild clean build -project VisionBend.xcodeproj -scheme VisionBend \
+            -sdk iphonesimulator -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Launch iPhone and capture screens
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available | grep 'iPhone ' | grep -Eo '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}' | head -n 1)
+          test -n "$DEVICE_ID"
+          xcodebuild -project VisionBend.xcodeproj -scheme VisionBend \
+            -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -only-testing:VisionBendUITests/VisionBendLatestScreenshotsUITests \
+            -resultBundlePath VisionBendLatestScreenshots.xcresult CODE_SIGNING_ALLOWED=NO test
+      - name: Export XCTest genuine image attachments
+        if: always()
+        run: |
+          if [ -d VisionBendLatestScreenshots.xcresult ]; then
+            mkdir -p raw-export
+            xcrun xcresulttool export attachments --path VisionBendLatestScreenshots.xcresult --output-path raw-export || true
+          fi
+      - name: Copy image files
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,re,shutil,subprocess
+          src=pathlib.Path('raw-export')
+          dst=pathlib.Path('VisionBendLatestScreenshots')
+          dst.mkdir(exist_ok=True)
+          taken={}
+          for manifest in src.rglob('manifest.json'):
+              try: data=json.loads(manifest.read_text())
+              except Exception:continue
+              def extract(v):
+                  if isinstance(v,dict):
+                      title=v.get('suggestedHumanReadableName') or v.get('name') or ''
+                      name=v.get('exportedFileName') or v.get('filename') or ''
+                      if isinstance(title,str) and isinstance(name,str) and re.match(r'^0[1-8]-',title):
+                          p=manifest.parent/name
+                          if p.is_file():taken[str(p)]=re.sub('[^A-Za-z0-9_-]','-',title)
+                      for u in v.values():extract(u)
+                  elif isinstance(v,list):
+                      for u in v:extract(u)
+              extract(data)
+          if not taken:
+              files=[p for p in src.rglob('*') if p.suffix.lower() in ('.png','.jpeg','.jpg','.heic')]
+              taken={str(p):f'capture-{i+1:02d}' for i,p in enumerate(sorted(files))}
+          for file,title in taken.items():
+              p=pathlib.Path(file)
+              out=dst/(title+'.png')
+              if p.suffix.lower()=='.png':shutil.copy2(p,out)
+              else:subprocess.run(['sips','-s','format','png',str(p),'--out',str(out)],check=True)
+          count=len(list(dst.glob('*.png')))
+          print('REAL_SCREENSHOT_COUNT',count)
+          if count<1:raise SystemExit('No screenshots; see Xcode logs')
+          PY
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VisionBend-latest-real-iPhone-screenshots
+          path: |
+            VisionBendLatestScreenshots/*.png
+            VisionBendLatestScreenshots.xcresult
+          if-no-files-found: warn
+      - name: Publish real screenshots to QA branch
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VisionBendLatestScreenshots/*.png
+          git diff --cached --quiet || git commit -m "Save real latest iPhone simulator screens"
+          git push origin HEAD:qa/visionbend-latest-screenshots-20261021
