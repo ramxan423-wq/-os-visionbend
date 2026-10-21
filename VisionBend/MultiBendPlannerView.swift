@@ -71,7 +71,7 @@ struct MultiBendPlannerView: View {
             }
             Section(l("Shape")) {
                 Picker(l("Shape"), selection: $preset) {
-                    ForEach(["Custom", "Offset", "90° Stub", "3-Point Saddle", "4-Point Saddle", "Kick", "Rolling Offset", "Back-to-Back 90°", "Compound 90°", "Segmented Arc"], id: \.self) { Text($0) }
+                    ForEach(["Custom", "Offset", "90° Stub", "3-Point Saddle", "4-Point Saddle", "Kick", "Rolling Offset", "Back-to-Back 90°", "Compound 90°", "Segmented Arc"], id: \.self) { Text(l($0)).tag($0) }
                 }
                 TextField(l("Rise / desired stub"), text: $presetRise).keyboardType(.decimalPad)
                 TextField(l("Angle"), text: $presetAngle).keyboardType(.decimalPad)
@@ -110,7 +110,7 @@ struct MultiBendPlannerView: View {
                 TextField(l("Mark position from start"), text: $markPosition).keyboardType(.decimalPad)
                 TextField(l("Bend angle"), text: $markAngle).keyboardType(.decimalPad)
                 Picker(l("Direction"), selection: $direction) {
-                    ForEach(directions, id: \.self) { Text($0) }
+                    ForEach(directions, id: \.self) { Text(l($0)).tag($0) }
                 }
                 Button(l("Add Mark")) { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
