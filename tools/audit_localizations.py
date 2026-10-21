@@ -57,22 +57,6 @@ def load_extra():
             raise SystemExit('Translation array misaligned for ' + m.group(1))
     return {k:{language: rows[language][idx] for language in rows} for idx,k in enumerate(keys)}
 
-def load_watch():
-    """Read the watchOS-only localization table, compiled in its own target."""
-    src = (ROOT / "VisionBendWatch" / "WatchApp.swift").read_text()
-    km = re.search(r'private static let keys = (\[[^\n]+\])', src)
-    if not km:
-        return {}
-    keys = json.loads(km.group(1))
-    rows = {}
-    for m in re.finditer(r'^\s*"([a-zA-Z-]+)": (\[[^\n]+\]),?$', src, re.M):
-        rows[m.group(1)] = json.loads(m.group(2))
-        if len(rows[m.group(1)]) != len(keys):
-            raise SystemExit("Watch localization length mismatch: " + m.group(1))
-    return {key: {code: row[i] for code, row in rows.items()}
-            for i, key in enumerate(keys)}
-
-
 def check():
     picker = tuple(CODE_RE.findall(LANGUAGES.read_text().split('static let supported:', 1)[1].split('    ]',1)[0]))
     if picker != EXPECTED:
@@ -90,14 +74,14 @@ def check():
                 if not isinstance(translated, str) or not translated.strip():
                     raise SystemExit("Empty generated translation: " + code + " " + english)
                 draft.setdefault(english, {})[code] = translated
-    for source in (load_extra(), load_watch(), draft):
+    for source in (load_extra(), draft):
         for key, row in source.items():
             translations.setdefault(key, {}).update(row)
 
     call_sites = {}
     turkish_explicit_keys = set()
     raw_sites = {}
-    for path in list(SOURCE.glob("*.swift")) + list((ROOT / "VisionBendWatch").glob("*.swift")):
+    for path in list(SOURCE.glob("*.swift")):
         if path.name.startswith("VisionBendLocalization") or path.name == "VisionBendMoreTranslations.swift":
             continue
         src = path.read_text()
@@ -146,7 +130,7 @@ def check():
             key: sorted(files) for key, files in sorted(raw_sites.items())
         },
         "unlocalizedLiteralCount": len(raw_sites),
-        "note": "This static audit does not verify runtime strings, PDF export labels, Watch sync, dynamic errors or natural translation quality."
+        "note": "This static audit does not verify runtime strings, PDF export labels, dynamic errors or natural translation quality."
     }
     return report
 
