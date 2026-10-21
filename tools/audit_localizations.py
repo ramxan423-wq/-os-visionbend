@@ -109,6 +109,20 @@ def check():
         # actual Turkish source string, not an untranslated English fallback.
         for match in TWO_LANGUAGE_RE.finditer(src):
             turkish_explicit_keys.add(unquote(match.group(1)))
+        # Runtime statuses are English keys assigned in camera/AR/StoreKit
+        # model objects, then displayed through l(variable). Include them too.
+        for line in src.splitlines():
+            if re.search(r'\b(?:message|notice|result|errorMessage|status)\s*=', line):
+                assignment = re.split(r'\b(?:message|notice|result|errorMessage|status)\s*=\s*', line, maxsplit=1)
+                if len(assignment) > 1:
+                    for literal in re.findall(r'"((?:[^"\\]|\\.)*)"', assignment[1]):
+                        english = unquote(literal)
+                        if len(english) > 6 and re.search(r'[A-Za-z]', english) and r'\(' not in english:
+                            call_sites.setdefault(english, set()).add(path.name + ":runtime")
+        # Manufacturer notes shown inside the saved bender reference view.
+        if path.name == "VerifiedBenderCatalog.swift":
+            for match in re.finditer(r'notes:\s*"((?:[^"\\]|\\.)*)"', src):
+                call_sites.setdefault(unquote(match.group(1)), set()).add(path.name + ":notes")
         for match in RAW_RE.finditer(src):
             text = unquote(match.group(1))
             # Branding and manufacturer-identifying data are intentionally not translated.
