@@ -36,9 +36,9 @@ struct BenderReferenceView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.brand + " " + item.model).font(.headline)
                         Text(item.conduit + " " + item.tradeSize)
-                        if let deduct = item.deductInches { Text(String(format: "90° deduct: %.3f in", deduct)) }
-                        if let radius = item.radiusInches { Text(String(format: "Centerline radius: %.3f in", radius)) }
-                        Text(item.notes).font(.caption)
+                        if let deduct = item.deductInches { Text(String(format: l("90° deduct: %.3f in"), deduct)) }
+                        if let radius = item.radiusInches { Text(String(format: l("Centerline radius: %.3f in"), radius)) }
+                        Text(l(item.notes)).font(.caption)
                         if let url = URL(string: item.sourceURL) { Link(l("Official manufacturer source"), destination: url) }
                     }
                 }
