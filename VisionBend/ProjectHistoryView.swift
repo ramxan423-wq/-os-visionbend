@@ -72,8 +72,8 @@ struct ProjectHistoryView: View {
                 }
                 ForEach(history.items) { bend in
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(bend.projectName?.isEmpty == false ? bend.projectName! : bend.mode).font(.headline)
-                        Text(bend.mode).font(.caption).foregroundStyle(.secondary)
+                        Text(bend.projectName?.isEmpty == false ? bend.projectName! : l(bend.mode)).font(.headline)
+                        Text(l(bend.mode)).font(.caption).foregroundStyle(.secondary)
                         Text(bend.date, style: .date).font(.caption).foregroundStyle(.secondary)
                         Text(bend.result).font(.body.monospacedDigit())
                         Text(l("Inputs") + ": \(bend.firstValue.formatted()) / \(bend.secondValue.formatted())")
@@ -93,7 +93,7 @@ struct ProjectHistoryView: View {
             .toolbar { EditButton() }
             .sheet(item: $exporting) { bend in
                 NavigationStack {
-                    ProjectExportView(project: BendProjectExport(title: bend.projectName ?? bend.mode, mode: bend.mode, firstValue: bend.firstValue, secondValue: bend.secondValue, result: bend.result, notes: bend.notes))
+                    ProjectExportView(project: BendProjectExport(title: bend.projectName ?? bend.mode, mode: l(bend.mode), firstValue: bend.firstValue, secondValue: bend.secondValue, result: bend.result, notes: bend.notes))
                         .navigationTitle(l("Export Project"))
                         .toolbar { ToolbarItem(placement: .confirmationAction) { Button(l("Done")) { exporting = nil } } }
                 }
