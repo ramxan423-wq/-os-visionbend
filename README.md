@@ -1,32 +1,36 @@
 # VisionBend iOS
 
-Native SwiftUI iOS application under development. **Not yet a complete Android port or verified TestFlight build.**
+Native SwiftUI electrical-conduit bending and measurement app. The source includes eight basic bend calculators, advanced multi-bend planning, cut optimization, manufacturer references, project history, PDF export, camera-level, calibrated photo scan, optional AR/LiDAR tools and optional Apple Watch integration.
 
-## Implemented in source
-- Two-point offset mark spacing and theoretical shrink
-- Three-point saddle mark spacing
-- Kick horizontal travel
-- Bend centerline arc length
-- Rolling offset resultant
-- Camera preview with camera permission handling
-- Motion-sensor pitch/roll level (reference only)
-- Persistent last-used calculation mode and input values
+## Current verification
+- GitHub Actions builds the unsigned iOS and watchOS Simulator targets and runs XCTest on macOS. See [iOS build verification](https://github.com/ramxan423-wq/-os-visionbend/actions).
+- A successful simulator build **does not** prove that camera, ARKit, LiDAR, Watch connectivity, purchasing, or notifications work on real devices.
+- The signed App Store archive workflow requires an Apple distribution certificate and matching provisioning profile. Codemagic has a separate App Store signed IPA workflow.
+- The build workflows generate the App Store icon asset catalog before XcodeGen.
+- The app's StoreKit product identifiers have not yet been populated. **Premium subscriptions are not operational until the actual App Store Connect identifiers and entitlement behavior are configured and tested.**
 
-## Build and test
-Requires macOS/Xcode 16 or compatible, plus XcodeGen:
+## Core calculations and planner
+- Two-point offset spacing and shrink, three-point saddle, kick, arc length, rolling offset, 90-degree stub and four-point saddle.
+- Multi-bend geometry, measured placement, optional model-specific calibration, printable multi-page marking sheet, schematic 2D and provisional 3D preview.
+- Unit-aware field input and display for mm/cm/in, including comma-decimal and fractional-inch entry in selected tools.
+- These calculations remain theoretical. Always use the exact bender model, real conduit dimensions, manufacturer's references and a field test bend.
+
+## Project build
+On macOS with a compatible Xcode installation:
 
 ```sh
 brew install xcodegen
+python3 tools/generate_app_icon.py
 xcodegen generate
-xcodebuild -project VisionBend.xcodeproj -scheme VisionBend -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project VisionBend.xcodeproj -scheme VisionBend \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO build
 ```
 
-A GitHub Actions workflow attempts a simulator build and unit tests on macOS. **Its success has not been confirmed.** A signed IPA requires Apple Developer signing credentials and Xcode archive/export configuration.
+To create a signed IPA, configure the exact iOS bundle identifier, signing integration and App Store Connect product IDs before running the `visionbend-ios-ipa` workflow in Codemagic.
 
-## Remaining work
-- Audit the original Android source ZIP and port remaining calculator modes and screens
-- Camera measurement / object detection and true AR implementation (the current camera level is *not* AR)
-- Calibration, localization, project storage, settings, subscription integration
-- Simulator and real-device tests, signing, TestFlight submission
-
-Safety: mathematical outputs are theoretical and may require adjustments for conduit type and the exact bender. Always verify against the tool and physical measurements.
+## Known limitations and remaining validation
+- Real iPhone camera access, motion-sensor level, Vision conduit identification, AR tracking and LiDAR depth require compatible real-device tests; camera features are experimental measurements, not calibrated metrology.
+- StoreKit subscriptions need real product IDs and purchase/restore/entitlement validation.
+- Navigation clarity and unit safety have been improved, but complete localization coverage for every selectable language and device-specific accessibility review are not yet verified.
+- The Android app's feature parity and the signed, App Store-ready IPA have not been independently confirmed.
