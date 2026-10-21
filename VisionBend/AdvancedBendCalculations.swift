@@ -30,19 +30,33 @@ enum AdvancedBendCalculations {
 
     static func parseInches(_ input: String) -> Double? {
         let normalized = input.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "in", with: "")
+            .replacingOccurrences(of: "in", with: "", options: .caseInsensitive)
             .replacingOccurrences(of: "\"", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let value = Double(normalized.replacingOccurrences(of: ",", with: ".")), value.isFinite { return value }
-        let parts = normalized.replacingOccurrences(of: "-", with: " ").split(separator: " ")
+        guard !normalized.isEmpty else { return nil }
+
+        if let value = Double(normalized.replacingOccurrences(of: ",", with: ".")),
+           value.isFinite { return value }
+
+        // Accept fractions such as 3/8, 1 1/2, 1-1/2 and signed values.
+        // A negative sign belongs to the WHOLE measurement, not just one component.
+        let negative = normalized.hasPrefix("-")
+        let signed = normalized.hasPrefix("+") || negative
+        let unsigned = signed ? String(normalized.dropFirst()) : normalized
+        let parts = unsigned.replacingOccurrences(of: "-", with: " ")
+            .split(whereSeparator: { $0.isWhitespace })
         guard parts.count == 1 || parts.count == 2 else { return nil }
-        let fraction = String(parts.last!)
-        let pair = fraction.split(separator: "/")
-        guard pair.count == 2, let numerator = Double(pair[0]), let denominator = Double(pair[1]),
+
+        let pair = parts[parts.count - 1].split(separator: "/", omittingEmptySubsequences: false)
+        guard pair.count == 2,
+              let numerator = Double(pair[0]), let denominator = Double(pair[1]),
+              numerator.isFinite, denominator.isFinite,
               numerator >= 0, denominator > 0 else { return nil }
         let whole = parts.count == 2 ? Double(parts[0]) : 0
-        guard let whole, whole >= 0 else { return nil }
-        return whole + numerator / denominator
+        guard let whole, whole.isFinite, whole >= 0 else { return nil }
+        let magnitude = whole + numerator / denominator
+        guard magnitude.isFinite else { return nil }
+        return negative ? -magnitude : magnitude
     }
 
     private static func greatestCommonDivisor(_ a: Int, _ b: Int) -> Int {
