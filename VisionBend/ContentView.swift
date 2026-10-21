@@ -30,6 +30,7 @@ struct ContentView: View {
     private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { VisionBendLocalization.text(en, turkish: tr, language: language) }
     private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
+    private var selectedMode: Int { names.indices.contains(mode) ? mode : 0 }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
         switch mode {
@@ -65,7 +66,10 @@ struct ContentView: View {
         .tint(accent)
         .environment(\.locale, activeLocale)
         .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
-        .onAppear { previousUnit = units }
+        .onAppear {
+            if !names.indices.contains(mode) { mode = 0 }
+            previousUnit = units
+        }
         .onChange(of: units) { newValue in
             guard let oldUnit = MeasurementUnit(rawValue: previousUnit),
                   let newUnit = MeasurementUnit(rawValue: newValue) else { previousUnit = newValue; return }
@@ -163,7 +167,7 @@ struct ContentView: View {
                     Text(t("Önce bükümü seçin; yalnızca o büküme ait ölçüleri girin.",
                            "Select the bend first; enter only the measurements required for it."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Text(t("Seçilen işlem: ", "Selected: ") + t(bendNamesTR[mode], names[mode]))
+                    Text(t("Seçilen işlem: ", "Selected: ") + t(bendNamesTR[selectedMode], names[selectedMode]))
                         .font(.subheadline.bold())
                         .foregroundStyle(accent)
                     Text(firstLabel + " (" + unitName + ")").font(.subheadline.bold())
