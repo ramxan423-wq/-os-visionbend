@@ -9,6 +9,8 @@ on:
       - 'VisionBend/BendCalculations.swift'
       - 'VisionBend/MoreBendCalculations.swift'
       - 'VisionBend/ExtraBendCalculations.swift'
+      - 'VisionBend/VerifiedBenderCatalog.swift'
+      - 'VisionBend/BenderCalibration.swift'
       - 'tools/field_math_test_runner.swift'
       - '.github/workflows/visionbend-field-math.yml'
   workflow_dispatch:
@@ -30,6 +32,8 @@ jobs:
             VisionBend/BendCalculations.swift \
             VisionBend/MoreBendCalculations.swift \
             VisionBend/ExtraBendCalculations.swift \
+            VisionBend/VerifiedBenderCatalog.swift \
+            VisionBend/BenderCalibration.swift \
             VisionBend/AdvancedFieldPatterns.swift \
             VisionBend/FieldQuickCheck.swift \
             tools/field_math_test_runner.swift
