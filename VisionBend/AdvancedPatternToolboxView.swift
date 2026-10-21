@@ -18,6 +18,9 @@ struct AdvancedPatternToolboxView: View {
     @State private var height = "150"
     @State private var clearance = "30"
     @State private var radius = ""
+    @State private var desiredStub = "450"
+    @State private var documentedTakeUp = ""
+    @State private var manualConfirmed = false
     @State private var quantity = 3
     @State private var rows: [PatternRow] = []
     @State private var output = ""
@@ -99,7 +102,13 @@ struct AdvancedPatternToolboxView: View {
                     }
                     TextField(l("Required clearance"), text: $clearance).keyboardType(.decimalPad)
                 }
-                if kind == "Kick with 90°" || kind == "Compound 90° Obstruction" {
+                if kind == "Kick with 90°" {
+                    TextField(l("Desired 90° stub length"), text: $desiredStub).keyboardType(.decimalPad)
+                    TextField(l("Documented take-up from exact manual"), text: $documentedTakeUp)
+                        .keyboardType(.decimalPad)
+                    Toggle(l("I verified this shoe and arrow reference in its manual"), isOn: $manualConfirmed)
+                }
+                if kind == "Compound 90° Obstruction" {
                     TextField(l("Documented centerline radius (optional)"), text: $radius)
                         .keyboardType(.decimalPad)
                 }
@@ -167,6 +176,8 @@ struct AdvancedPatternToolboxView: View {
         height = FieldInputNumber.convertedText(height, from: previous, to: unit)
         clearance = FieldInputNumber.convertedText(clearance, from: previous, to: unit)
         radius = FieldInputNumber.convertedText(radius, from: previous, to: unit)
+        desiredStub = FieldInputNumber.convertedText(desiredStub, from: previous, to: unit)
+        documentedTakeUp = FieldInputNumber.convertedText(documentedTakeUp, from: previous, to: unit)
         inputUnits = unit.rawValue
         rows = []
         output = ""
@@ -203,24 +214,36 @@ struct AdvancedPatternToolboxView: View {
                     row("Conduit " + String(i + 1), items)
                 }
             case "Kick with 90°":
-                let takeUp = number(radius)
-                // This mode is geometry-only. Calibrated 90 marks remain in main planner.
-                let kick = try MoreBendCalculations.kickTravel(rise: r, angleDegrees: a)
+                let travel = try MoreBendCalculations.kickTravel(rise: r, angleDegrees: a)
                 row(kind, [AdvancedFieldPatterns.Station(position: origin, angle: a, direction: "Up")])
-                output = String(format: l("Theoretical kick horizontal travel: %.2f %@. Add a 90° only with documented take-up."),
-                                kick, unitLabel)
-                if takeUp != nil {
-                    output += "\n" + l("Radius entered; this is not a verified arrow reference.")
+                output = String(format: l("Theoretical kick horizontal travel: %.2f %@."),
+                                travel, unitLabel)
+                if manualConfirmed {
+                    guard let desired = number(desiredStub),
+                          let takeUp = number(documentedTakeUp) else {
+                        throw BendCalculationError.invalidInput
+                    }
+                    let stubFromOtherEnd = try ExtraBendCalculations.ninetyDegreeStubMark(
+                        desiredStub: desired, takeUp: takeUp)
+                    guard stubFromOtherEnd <= overall else { throw BendCalculationError.invalidInput }
+                    output += "\n" + String(format: l("Calibrated 90° mark from the opposite end: %.2f %@."),
+                                               stubFromOtherEnd, unitLabel)
+                    output += "\n" + l("Do NOT combine marks measured from opposite ends without a physical reference.")
+                } else {
+                    output += "\n" + l("To calculate the 90° arrow mark, confirm exact-model manual take-up above.")
                 }
             case "Matching Bend Kick", "Matching Center Kick":
                 row(kind, try AdvancedFieldPatterns.matchingKick(
                     start: origin, rise: r, angle: a, separation: gap,
                     alignCenters: kind == "Matching Center Kick"))
             case "Parallel Kick", "Parallel Kick Forward":
-                row(kind, try AdvancedFieldPatterns.parallelKicks(
+                let kicks = try AdvancedFieldPatterns.parallelKicks(
                     firstStart: origin, rise: r, angle: a,
                     conduitSeparation: gap, count: quantity,
-                    forward: kind == "Parallel Kick Forward"))
+                    forward: kind == "Parallel Kick Forward")
+                for (i, kick) in kicks.enumerated() {
+                    row("Conduit " + String(i + 1), [kick])
+                }
             case "Compound 90° Obstruction":
                 guard let w = number(width), let h = number(height),
                       let c = number(clearance) else { throw BendCalculationError.invalidInput }
