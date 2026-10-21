@@ -81,15 +81,87 @@ struct ContentView: View {
             }
             output = ""; previousUnit = newValue
         }
-        .sheet(isPresented: $showCutPlanner) { NavigationStack { ConduitCutOptimizerView() } }
-        .sheet(isPresented: $showMultiBend) { NavigationStack { MultiBendPlannerView() } }
-        .sheet(isPresented: $showReference) { NavigationStack { BenderReferenceView() } }
-        .sheet(isPresented: $showAR) { NavigationStack { ARMeasureView() } }
-        .sheet(isPresented: $showPremium) { NavigationStack { SubscriptionView() } }
+        .sheet(isPresented: $showCutPlanner) {
+            NavigationStack {
+                ConduitCutOptimizerView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showCutPlanner = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showMultiBend) {
+            NavigationStack {
+                MultiBendPlannerView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showMultiBend = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showReference) {
+            NavigationStack {
+                BenderReferenceView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showReference = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showAR) {
+            NavigationStack {
+                ARMeasureView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showAR = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showPremium) {
+            NavigationStack {
+                SubscriptionView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showPremium = false }
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
-        .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showDepthScan) { NavigationStack { DepthConduitScanView() } }
-        .sheet(isPresented: $showConduitScan) { NavigationStack { ConduitScanView() } }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showSettings = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showDepthScan) {
+            NavigationStack {
+                DepthConduitScanView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showDepthScan = false }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showConduitScan) {
+            NavigationStack {
+                ConduitScanView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(t("Bitti", "Done")) { showConduitScan = false }
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showCamera) {
             NavigationStack {
                 CameraLevelView()
