@@ -48,6 +48,26 @@ import Foundation
             [.init(position: 25, angle: 30, direction: "Left")], conduitLength: 200)
         near(reversed[0].position, 175)
         precondition(AdvancedFieldPatterns.oppositeDirection("Left") == "Right")
-        print("PASS: 7 Swift numerical and QuickCheck smoke-test groups")
+        let manufacturerIDs = VerifiedBenderCatalog.entries.map(\.id)
+        precondition(Set(manufacturerIDs).count == manufacturerIDs.count,
+                     "Manufacturer catalog must not contain duplicate shoe/model IDs")
+        let gardner = VerifiedBenderCatalog.entries.first {
+            $0.id == "gardner-bigben-960-emt-half"
+        }
+        precondition(gardner?.deductInches == 5)
+        near(gardner?.radiusInches ?? .nan, 3.69)
+        for model in ["milwaukee-4080-emt-half",
+                      "milwaukee-4081-emt-threequarter",
+                      "milwaukee-4082-emt-one"] {
+            let row = VerifiedBenderCatalog.entries.first { $0.id == model }
+            precondition(row != nil && row?.deductInches == nil && row?.radiusInches == nil,
+                         "Never claim undocumented Milwaukee shoe dimensions")
+        }
+        let bender = BenderCalibration(manufacturer: "Gardner Bender", model: "960",
+                                       conduit: "EMT", tradeSize: "1/2 in",
+                                       referenceMark: "Arrow", takeUp: 5,
+                                       fieldCorrection: 0, source: "manufacturer guide")
+        near(bender.stubPosition(for: 25) ?? .nan, 20)
+        print("PASS: 10 Swift numerical, manufacturer catalog and QuickCheck smoke-test groups")
     }
 }
