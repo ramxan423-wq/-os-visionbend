@@ -83,6 +83,7 @@ def check():
             translations.setdefault(key, {}).update(row)
 
     call_sites = {}
+    turkish_explicit_keys = set()
     raw_sites = {}
     for path in list(SOURCE.glob("*.swift")) + list((ROOT / "VisionBendWatch").glob("*.swift")):
         if path.name.startswith("VisionBendLocalization") or path.name == "VisionBendMoreTranslations.swift":
@@ -92,6 +93,10 @@ def check():
         for pattern in (LOCAL_RE, TWO_LANGUAGE_RE, TEXT_RE):
             for match in pattern.finditer(src):
                 call_sites.setdefault(unquote(match.group(1)), set()).add(path.name)
+        # The two-argument t(turkish, english) helper already contains an
+        # actual Turkish source string, not an untranslated English fallback.
+        for match in TWO_LANGUAGE_RE.finditer(src):
+            turkish_explicit_keys.add(unquote(match.group(1)))
         for match in RAW_RE.finditer(src):
             text = unquote(match.group(1))
             # Branding and manufacturer-identifying data are intentionally not translated.
@@ -103,7 +108,7 @@ def check():
         if code == "en":
             coverage[code] = {"translated": len(call_sites), "missing": []}
             continue
-        missing = sorted(key for key in call_sites if not translations.get(key, {}).get(code))
+        missing = sorted(key for key in call_sites if not translations.get(key, {}).get(code) and not (code == "tr" and key in turkish_explicit_keys))
         coverage[code] = {"translated": len(call_sites) - len(missing), "missing": missing}
 
     report = {
