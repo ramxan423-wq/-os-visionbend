@@ -112,12 +112,12 @@ def check():
         # Runtime statuses are English keys assigned in camera/AR/StoreKit
         # model objects, then displayed through l(variable). Include them too.
         for line in src.splitlines():
-            if re.search(r'\b(?:message|notice|result|errorMessage|status)\s*=', line):
+            if re.search(r'\b(?:message|notice|result|errorMessage|status)\s*=', line) and not re.search(r'\b(?:l|t)\(', line):
                 assignment = re.split(r'\b(?:message|notice|result|errorMessage|status)\s*=\s*', line, maxsplit=1)
                 if len(assignment) > 1:
                     for literal in re.findall(r'"((?:[^"\\]|\\.)*)"', assignment[1]):
                         english = unquote(literal)
-                        if len(english) > 6 and re.search(r'[A-Za-z]', english) and r'\(' not in english:
+                        if len(english) > 6 and re.search(r'[A-Za-z]', english) and r'\(' not in english and not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)+', english):
                             call_sites.setdefault(english, set()).add(path.name + ":runtime")
         # Manufacturer notes shown inside the saved bender reference view.
         if path.name == "VerifiedBenderCatalog.swift":
