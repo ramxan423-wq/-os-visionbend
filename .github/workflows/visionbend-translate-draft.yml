@@ -1,0 +1,58 @@
+name: VisionBend offline 20-language translation drafts
+on:
+  push:
+    branches:
+      - feat/visionbend-20-language-complete-20261021
+    paths:
+      - ".github/workflows/visionbend-translate-draft.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check development-only translation service availability
+        run: |
+          python3 - <<'PY'
+          import json,urllib.parse,urllib.request
+          q=urllib.parse.urlencode({'client':'gtx','sl':'en','tl':'tr','dt':'t','q':'Open Settings'})
+          req=urllib.request.Request('https://translate.googleapis.com/translate_a/single?'+q,headers={'User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=15) as r: a=json.load(r)
+          print('TRANSLATION PROBE:',a[0][0][0])
+          PY
+      - name: Generate draft translation resources (no network at app runtime)
+        id: translate
+        continue-on-error: true
+        run: python3 tools/fill_missing_translations.py
+      - name: Archive language drafts and all failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VisionBend-machine-localization-draft
+          path: |
+            VisionBend/GeneratedTranslations.json
+            translation-draft-qa.json
+            translation-draft-cache.json
+          if-no-files-found: warn
+      - name: Commit draft localized resources to development branch
+        if: always()
+        run: |
+          if [ ! -f VisionBend/GeneratedTranslations.json ]; then
+            echo "No localization resource produced."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VisionBend/GeneratedTranslations.json
+          git diff --cached --quiet || git commit -m "Add machine-localized UI drafts; requires professional technical review"
+          git push origin HEAD:feat/visionbend-20-language-complete-20261021
+      - name: Fail release gate if untranslated strings remain
+        if: steps.translate.outcome != 'success'
+        run: |
+          echo "::error::Some translations could not be generated; draft is not release-ready."
+          exit 1
