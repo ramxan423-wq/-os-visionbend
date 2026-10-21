@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ConduitCutOptimizerView: View {
     @AppStorage("visionbend.language") private var language = "system"
+    @AppStorage("visionbend.units") private var selectedUnits = 0
+    @State private var inputUnits = 0
+    private var currentUnit: MeasurementUnit { MeasurementUnit(rawValue: selectedUnits) ?? .millimeters }
     private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @State private var stock = "3000"
     @State private var kerf = "3"
@@ -13,6 +16,8 @@ struct ConduitCutOptimizerView: View {
                 TextField(l("Stock length (same units)"), text: $stock).keyboardType(.decimalPad)
                 TextField(l("Saw kerf per cut"), text: $kerf).keyboardType(.decimalPad)
                 TextField(l("Required pieces, comma separated"), text: $cuts)
+                Text(l("Stock length (same units)") + ": " + currentUnit.symbol)
+                    .font(.caption).foregroundStyle(.secondary)
                 Button(l("Optimize cuts")) { calculate() }
             }
             Section(l("Cut plan")) {
@@ -22,10 +27,24 @@ struct ConduitCutOptimizerView: View {
             Section(l("Important")) {
                 Text(l("Simple straight-stock cutting plan. Does not calculate bend developed lengths or account for damaged stock."))
             }
-        }.navigationTitle(l("Conduit Cut Planner"))
+        }
+        .navigationTitle(l("Conduit Cut Planner"))
+        .onAppear { updateUnits() }
+        .onChange(of: selectedUnits) { _ in updateUnits() }
+    }
+    private func updateUnits() {
+        guard let from = MeasurementUnit(rawValue: inputUnits), from != currentUnit else { return }
+        stock = FieldInputNumber.convertedText(stock, from: from, to: currentUnit)
+        kerf = FieldInputNumber.convertedText(kerf, from: from, to: currentUnit)
+        // Preserve the existing comma-separated list, but convert each length.
+        cuts = cuts.split(separator: ",", omittingEmptySubsequences: false)
+            .map { FieldInputNumber.convertedText(String($0).trimmingCharacters(in: .whitespaces), from: from, to: currentUnit) }
+            .joined(separator: ", ")
+        result = ""
+        inputUnits = currentUnit.rawValue
     }
     private func calculate() {
-        func parse(_ s: String) -> Double? { Double(s.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")) }
+        func parse(_ s: String) -> Double? { FieldInputNumber.parse(s, unit: currentUnit) }
         guard let length = parse(stock), let blade = parse(kerf),
               length.isFinite, blade.isFinite, length > 0, blade >= 0 else {
             result = l("Invalid stock length or saw kerf."); return
