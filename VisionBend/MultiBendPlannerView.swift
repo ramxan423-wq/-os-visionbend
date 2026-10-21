@@ -173,7 +173,7 @@ struct MultiBendPlannerView: View {
                     HStack {
                         Text(String(format: "%.2f", mark.position)).monospacedDigit()
                         Spacer()
-                        Text(String(format: "%.1f° %@", mark.angle, mark.direction))
+                        Text(String(format: "%.1f° %@", mark.angle, l(mark.direction)))
                     }
                 }
                 .onDelete { indices in
@@ -479,7 +479,7 @@ struct MultiBendPlannerView: View {
                 tick.stroke()
             }
             for (index, mark) in allMarks.enumerated() where index / marksPerPage == page {
-                let line = String(format: "%d. From start: %.2f  |  Angle: %.1f deg  |  %@", index + 1, mark.position, mark.angle, mark.direction)
+                let line = String(format: l("%d. From start: %.2f  |  Angle: %.1f deg  |  %@"), index + 1, mark.position, mark.angle, l(mark.direction))
                 line.draw(at: CGPoint(x: 36, y: 225 + CGFloat(index % marksPerPage) * 23), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
             }
             let caution = l("SCHEMATIC ONLY. Verify bender reference and calibration before field use.")
@@ -488,7 +488,7 @@ struct MultiBendPlannerView: View {
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("VisionBend-Marks-\(UUID().uuidString).pdf")
         do { try data.write(to: url); pdfURL = url; message = "" }
-        catch { message = "PDF export failed: \(error.localizedDescription)" }
+        catch { message = l("PDF export failed.") + " " + error.localizedDescription }
     }
 }
 
