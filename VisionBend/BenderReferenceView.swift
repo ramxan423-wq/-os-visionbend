@@ -47,11 +47,11 @@ struct BenderReferenceView: View {
             }
             Section(l("Bender and conduit")) {
                 Picker(l("Manufacturer"), selection: $manufacturer) {
-                    ForEach(brands, id: \.self) { Text($0) }
+                    ForEach(brands, id: \.self) { Text(l($0)).tag($0) }
                 }
                 TextField(l("Exact model / part number"), text: $model)
                 Picker(l("Conduit type"), selection: $conduitType) {
-                    ForEach(conduitTypes, id: \.self) { Text($0) }
+                    ForEach(conduitTypes, id: \.self) { Text(l($0)).tag($0) }
                 }
                 TextField(l("Conduit trade size"), text: $conduitSize)
                 TextField(l("Manual take-up (selected units)"), text: $takeUp).keyboardType(.decimalPad)
