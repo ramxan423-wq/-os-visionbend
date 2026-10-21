@@ -460,7 +460,8 @@ struct ContentView: View {
                 errorMessage = t("Büküm türünü yeniden seçin.", "Unknown calculator mode. Select a mode again.")
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = t("Geçersiz ölçü veya büküm açısı. Ölçüleri kontrol edin.",
+                             "Invalid dimensions or bend angle. Check your measurements.")
         }
         if units == 2, !output.isEmpty {
             output += "\n" + t("İlk ölçü (kesirli inç): ", "First value (fractional inches): ") + AdvancedBendCalculations.fractionalInches(rise)
