@@ -33,6 +33,22 @@ struct ContentView: View {
     private func t(_ tr: String, _ en: String) -> String { VisionBendLocalization.text(en, turkish: tr, language: language) }
     private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
     private var selectedMode: Int { names.indices.contains(mode) ? mode : 0 }
+    private var calculatorNumericValid: Bool {
+        guard let first = numericInput(height), let second = numericInput(angle),
+              first.isFinite, second.isFinite else { return false }
+        switch selectedMode {
+        case 0, 2, 6: return first > 0 && second > 0 && second < 90
+        case 1: return first > 0 && second > 0 && second < 180
+        case 3: return first > 0 && second > 0 && second <= 180
+        case 4:
+            guard let theta = Double(rollingAngle.replacingOccurrences(of: ",", with: ".")) else { return false }
+            return first >= 0 && second >= 0 && (first > 0 || second > 0)
+                && theta.isFinite && theta > 0 && theta < 90
+        case 5: return first > second && second >= 0
+        case 7: return first > 0 && second > 0
+        default: return false
+        }
+    }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
         switch mode {
@@ -281,7 +297,7 @@ struct ContentView: View {
                                 "Enter measurements for QuickCheck."),
                               systemImage: "info.circle")
                             .foregroundStyle(.secondary).font(.caption)
-                    } else if numericInput(height) == nil || numericInput(angle) == nil {
+                    } else if !calculatorNumericValid {
                         Label(t("QuickCheck: Geçersiz ölçü.", "QuickCheck: Invalid number."),
                               systemImage: "xmark.octagon.fill")
                             .foregroundStyle(.red).font(.caption)
