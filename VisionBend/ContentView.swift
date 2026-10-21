@@ -6,6 +6,7 @@ struct ContentView: View {
     @AppStorage("visionbend.language") private var language = "system"
     @AppStorage("visionbend.languageChosen") private var languageChosen = false
     @AppStorage("visionbend.units") private var units = 0
+    @AppStorage("visionbend.inputStyle.slider") private var useSliders = false
     @State private var previousUnit = 0
     @State private var showHistory = false
     @State private var showSettings = false
@@ -260,11 +261,35 @@ struct ContentView: View {
                         .font(.subheadline.bold())
                     TextField(secondLabel, text: $angle).keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                         .onChange(of: angle) { _ in output = ""; errorMessage = "" }
+                    Toggle(t("Kaydırıcı ile giriş", "Slider input"), isOn: $useSliders)
+                        .font(.subheadline)
+                    if useSliders && [0, 2, 3, 6].contains(mode) {
+                        Slider(value: Binding(
+                            get: { min(85, max(5, Double(angle.replacingOccurrences(of: ",", with: ".")) ?? 30)) },
+                            set: { angle = String(format: "%.1f", $0) }),
+                               in: 5...85, step: 1)
+                        .accessibilityLabel(t("Büküm açısı kaydırıcısı", "Bend angle slider"))
+                    }
                     if mode == 4 {
                         Text(t("Büküm açısı (derece)", "Bend angle (degrees)")).font(.subheadline.bold())
                         TextField(t("Örnek: 30", "Example: 30"), text: $rollingAngle)
                             .keyboardType(.decimalPad).textFieldStyle(.roundedBorder)
                             .onChange(of: rollingAngle) { _ in output = ""; errorMessage = "" }
+                    }
+                    if height.isEmpty || angle.isEmpty {
+                        Label(t("Ölçüleri girin; QuickCheck girişleri kontrol edecek.",
+                                "Enter measurements for QuickCheck."),
+                              systemImage: "info.circle")
+                            .foregroundStyle(.secondary).font(.caption)
+                    } else if numericInput(height) == nil || numericInput(angle) == nil {
+                        Label(t("QuickCheck: Geçersiz ölçü.", "QuickCheck: Invalid number."),
+                              systemImage: "xmark.octagon.fill")
+                            .foregroundStyle(.red).font(.caption)
+                    } else {
+                        Label(t("QuickCheck: Ölçüler sayısal olarak uygun. Bükücü kılavuzuyla doğrulayın.",
+                                "QuickCheck: Numeric input valid. Confirm against bender manual."),
+                              systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange).font(.caption)
                     }
                     Button(action: calculate) {
                         Label(t("Hesapla", "Calculate"), systemImage: "equal")
