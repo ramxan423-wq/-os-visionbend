@@ -13,6 +13,13 @@ final class AdvancedBendCalculationsTests: XCTestCase {
         XCTAssertEqual(AdvancedBendCalculations.parseInches("1 1/2"), 1.5)
         XCTAssertEqual(AdvancedBendCalculations.parseInches("3/8"), 0.375)
         XCTAssertNil(AdvancedBendCalculations.parseInches("1/0"))
+        XCTAssertEqual(AdvancedBendCalculations.parseInches("-1 1/2"), -1.5)
+        XCTAssertEqual(AdvancedBendCalculations.parseInches("-1-1/2"), -1.5)
+        XCTAssertEqual(AdvancedBendCalculations.parseInches("+3/8"), 0.375)
+        XCTAssertEqual(AdvancedBendCalculations.parseInches("1,25"), 1.25)
+        XCTAssertNil(AdvancedBendCalculations.parseInches("1/-2"))
+        XCTAssertNil(AdvancedBendCalculations.parseInches("1/0"))
+        XCTAssertNil(AdvancedBendCalculations.parseInches("not a length"))
     }
     func testInvalidCompound() {
         XCTAssertThrowsError(try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: -1, secondLeg: 2))
