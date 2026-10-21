@@ -5,6 +5,7 @@ import PackageDescription
 // project.yml; this manifest deliberately excludes all SwiftUI/ARKit sources.
 let package = Package(
     name: "VisionBendFieldGeometryQA",
+    defaultLocalization: "en",
     platforms: [.macOS(.v13)],
     products: [.library(name: "VisionBend", targets: ["VisionBend"])],
     targets: [
