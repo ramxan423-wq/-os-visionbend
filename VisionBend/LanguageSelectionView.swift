@@ -70,7 +70,12 @@ struct LanguageSelectionView: View {
             .navigationTitle("VisionBend")
             .onAppear {
                 let preferred = Locale.preferredLanguages.first ?? "en"
-                selected = VisionBendLanguages.supported.first(where: { preferred == $0.code })?.code ?? VisionBendLanguages.supported.first(where: { preferred.hasPrefix($0.code + "-") })?.code ?? "en"
+                if language != "system" && VisionBendLanguages.supported.contains(where: { $0.code == language }) {
+                    selected = language
+                } else {
+                    selected = VisionBendLanguages.supported.first(where: { preferred == $0.code })?.code ??
+                        VisionBendLanguages.supported.first(where: { preferred.hasPrefix($0.code + "-") })?.code ?? "en"
+                }
             }
         }
     }
