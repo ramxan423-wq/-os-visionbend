@@ -11,11 +11,11 @@ Date: 2026-10-26. Repository: `ramxan423-wq/-os-visionbend`.
 
 ## Executed calculation checks
 
-The Foundation-only Swift package compiled and all **56 XCTest cases** executed successfully in [GitHub Actions run 40365748364](https://github.com/ramxan423-wq/-os-visionbend/actions/runs/40365748364) at commit `1e8f2cde06b4d66f6bbda53fa6ef59ce4699a1a8`. The same run successfully parsed **all iOS Swift source files** for syntax errors. These are genuine compiler checks, **not an iOS app build**. They include:
+The Foundation-only Swift package compiled and all **56 XCTest cases** executed successfully in [GitHub Actions run 40366588347](https://github.com/ramxan423-wq/-os-visionbend/actions/runs/40366588347) at commit `1e7079b6c46fa3faab7d11040632d9ac593f23fa`. The same run successfully parsed **all iOS Swift source files** for syntax errors. These are genuine compiler checks, **not an iOS app build**. They include:
 
 1. The eight Home calculations: offset (mark spacing and theoretical shrink), three-point saddle, kick, arc length, rolling offset, 90° stub, four-point saddle spacing, and compound-90 **planar geometry**.
 2. Unit conversions and fractional-inch input, decimal-comma cut lists, and invalid or overflowing numeric inputs.
-3. Bender take-up calibration, legacy/new saved-profile decoding, manufacturer catalog identity/table integrity, radius-based segmented/compound geometry, theoretical back-to-back relative STAR guidance, camera diameter and horizontal/vertical focal-axis calculations (not camera recognition), level-math helpers, and the English-only localization fallback.
+3. Bender take-up calibration, legacy/new saved-profile decoding and inch-to-mm conversion, manufacturer catalog identity/table integrity, radius-based segmented/compound geometry, theoretical back-to-back relative STAR guidance, camera diameter and horizontal/vertical focal-axis calculations (not camera recognition), level-math helpers, and the English-only localization fallback.
 
 Example calculated values: 10 mm rise / 30° offset → 20 mm theoretical mark spacing and 2.6795 mm theoretical shrink; 100 mm stub with verified 15 mm take-up → 85 mm mark. These values do not certify field-marking accuracy.
 
@@ -42,7 +42,7 @@ Example calculated values: 10 mm rise / 30° offset → 20 mm theoretical mark s
 | Photo conduit scan | Source inspected | Camera capture, photo-library input, and manual two-point conduit + two-point same-plane reference calibration wired; automatic contour estimate still **not verified diameter detection** |
 | LiDAR depth scan | Source inspected | Horizontal/vertical image-to-focal-axis mismatch fixed, five-frame provisional reading and unsupported-device guard wired; LiDAR device + calipers test pending |
 | AR point-to-point distance | Source inspected | Manual two-tap surface tracking; no tape-measure accuracy comparison |
-| AR conduit marks | Source inspected | Manual start/end selection, proportional virtual markers, reset fix; not automatic pipe recognition or real bender mark validation |
+| AR conduit marks | Source inspected | Manual start/end selection, proportional virtual markers, reset fix; plan must now be explicitly confirmed against the physical bender before activating overlay; not automatic pipe recognition |
 | Direct paid download | Source inspected | Subscription/paywall code removed; **US $9.99 storefront price must be set/verified in App Store Connect** |
 | Signed App Store archive | Unverified | Current signed IPA/archive and upload not demonstrated |
 

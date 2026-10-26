@@ -56,7 +56,7 @@ struct BendShapePreview: View {
             if centerlineRadius > 0 {
                 // Midpoint integration follows the circular centerline much more
                 // closely than rotating to the end of each chord before moving.
-                let pieces = 48
+                let pieces = 24
                 for _ in 0..<pieces {
                     let halfStep = radians / Float(pieces * 2)
                     heading = simd_normalize(simd_act(simd_quatf(angle: halfStep, axis: axis), heading))

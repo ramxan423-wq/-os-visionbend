@@ -72,7 +72,7 @@ struct ConduitScanView: View {
                     }
                 }
             } else {
-                Text(l("Experimental estimate requires a known-size reference in the same image plane. Contour thickness is not a verified outer diameter. Confirm with calipers."))
+                Text("Enable the same-plane reference to estimate a width from the photo.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Text(l(result)).font(.callout)

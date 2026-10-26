@@ -49,6 +49,7 @@ struct MultiBendPlannerView: View {
     @State private var centerlineRadius = ""
     @State private var outsideDiameter = ""
     @State private var showARMarks = false
+    @State private var confirmedPhysicalMarksForAR = false
     @State private var guideStep = 0
     @AppStorage("visionbend.units") private var selectedUnits = 0
     // The initial planner examples are in millimeters, whatever the saved user unit.
@@ -242,13 +243,15 @@ struct MultiBendPlannerView: View {
                 .onDelete { indices in
                     let ids = Set(indices.map { sorted[$0].id })
                     marks.removeAll { ids.contains($0.id) }
+                    confirmedPhysicalMarksForAR = false
                 }
                 Text(valid ? "Mark spacing passes the entered minimum." : "Invalid layout: check lengths, angles and minimum straight spacing.")
                     .foregroundStyle(valid ? .green : .red)
             }
             Section(l("Camera marking (experimental)")) {
+                Toggle("I verified these marks on my exact bender and a physical test bend", isOn: $confirmedPhysicalMarksForAR)
                 Button(l("Show Marks on Camera")) { showARMarks = true }
-                    .disabled(!valid || marks.isEmpty)
+                    .disabled(!valid || marks.isEmpty || !confirmedPhysicalMarksForAR)
                 Text(l("Tap conduit start and end in AR; verify marker locations manually."))
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -322,6 +325,7 @@ struct MultiBendPlannerView: View {
             copy.position = from.convert(mark.position, to: currentUnit)
             return copy
         }
+        confirmedPhysicalMarksForAR = false
         inputUnits = currentUnit.rawValue
         saddleTableKey = ""
         pdfURL = nil
@@ -382,6 +386,7 @@ struct MultiBendPlannerView: View {
 
     private func generatePreset() {
         backToBackInstructions = ""
+        confirmedPhysicalMarksForAR = false
         if requiresIMCHardware && !confirmedIMCHardware {
             message = "Install and confirm both 28008 shoe group and 13856 IMC squeeze roller first."
             return
@@ -560,6 +565,10 @@ struct MultiBendPlannerView: View {
     }
 
     private func addMark() {
+        guard marks.count < 100 else {
+            message = "A plan can contain at most 100 bend marks. Create a separate plan for the remaining bends."
+            return
+        }
         guard let position = dimension(markPosition),
               let angle = Double(markAngle.replacingOccurrences(of: ",", with: ".")),
               position.isFinite, angle.isFinite, position >= 0, angle > 0, angle <= 90 else {
@@ -572,6 +581,7 @@ struct MultiBendPlannerView: View {
             return
         }
         marks.append(BendMark(position: position, angle: angle, direction: direction))
+        confirmedPhysicalMarksForAR = false
         pdfURL = nil
         message = ""
     }
@@ -604,6 +614,10 @@ struct MultiBendPlannerView: View {
     }
 
     private func addCalibratedMark() {
+        guard marks.count < 100 else {
+            message = "A plan can contain at most 100 bend marks."
+            return
+        }
         guard let desired = dimension(desiredStub),
               let position = calibratedStubPosition(for: desired),
               FieldBendGeometry.isFeasible(markPositions: marks.map(\.position) + [position], conduitLength: length, minStraight: clearance) else {
@@ -611,6 +625,7 @@ struct MultiBendPlannerView: View {
             return
         }
         marks.append(BendMark(position: position, angle: 90, direction: direction))
+        confirmedPhysicalMarksForAR = false
         pdfURL = nil
         message = "Stub mark added using your manual-supplied calibration."
     }
