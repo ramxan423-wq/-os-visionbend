@@ -4,7 +4,9 @@ import Foundation
 enum AdvancedBendCalculations {
     static func compoundNinetyTravel(firstLeg: Double, secondLeg: Double) throws -> Double {
         guard firstLeg.isFinite, secondLeg.isFinite, firstLeg > 0, secondLeg > 0 else { throw BendCalculationError.invalidInput }
-        return hypot(firstLeg, secondLeg)
+        let diagonal = hypot(firstLeg, secondLeg)
+        guard diagonal.isFinite else { throw BendCalculationError.invalidInput }
+        return diagonal
     }
 
     static func compoundNinetyRotation(firstLeg: Double, secondLeg: Double) throws -> Double {

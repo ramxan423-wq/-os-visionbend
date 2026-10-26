@@ -22,4 +22,18 @@ final class BendCalculationsTests: XCTestCase {
         XCTAssertThrowsError(try BendCalculations.offsetSpacing(rise: -1, angleDegrees: 30))
         XCTAssertThrowsError(try BendCalculations.saddleOuterMarkDistance(height: 10, centerAngleDegrees: 180))
     }
+
+    func testInvalidInputMessageIsEnglish() {
+        XCTAssertEqual(BendCalculationError.invalidInput.errorDescription,
+                       "Enter valid positive measurements and an angle supported by this bend calculation.")
+    }
+
+    func testExtremelyLargeResultsAreRejectedRatherThanDisplayedAsInfinity() {
+        XCTAssertThrowsError(try BendCalculations.offsetSpacing(rise: 1e308, angleDegrees: 0.001))
+        XCTAssertThrowsError(try BendCalculations.saddleOuterMarkDistance(height: 1e308, centerAngleDegrees: 0.001))
+        XCTAssertThrowsError(try MoreBendCalculations.kickTravel(rise: 1e308, angleDegrees: 0.001))
+        XCTAssertThrowsError(try MoreBendCalculations.arcLength(centerlineRadius: 1e308, angleDegrees: 180))
+        XCTAssertThrowsError(try MoreBendCalculations.rollingOffset(horizontal: 1.5e308, vertical: 1.5e308))
+        XCTAssertThrowsError(try AdvancedBendCalculations.compoundNinetyTravel(firstLeg: 1.5e308, secondLeg: 1.5e308))
+    }
 }

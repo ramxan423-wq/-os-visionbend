@@ -47,6 +47,7 @@ private struct ARBendMarkCamera: UIViewRepresentable {
     }
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.refreshIfNeeded()
     }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
         view.session.pause()
@@ -55,7 +56,14 @@ private struct ARBendMarkCamera: UIViewRepresentable {
         var parent: ARBendMarkCamera
         weak var view: ARView?
         private var anchors: [AnchorEntity] = []
+        private var renderedEndpoints: [SIMD3<Float>] = []
         init(_ parent: ARBendMarkCamera) { self.parent = parent }
+
+        func refreshIfNeeded() {
+            // SwiftUI can clear endpoints (Reset) without a new camera tap.
+            // Remove stale AR markers as soon as that binding changes.
+            if renderedEndpoints != parent.endpoints { redraw() }
+        }
 
         @objc func tap(_ recognizer: UITapGestureRecognizer) {
             guard let view, recognizer.state == .ended,
@@ -74,6 +82,7 @@ private struct ARBendMarkCamera: UIViewRepresentable {
             guard let view else { return }
             anchors.forEach { view.scene.removeAnchor($0) }
             anchors.removeAll()
+            renderedEndpoints = parent.endpoints
             guard parent.endpoints.count == 2, parent.conduitLength > 0 else { return }
             let start = parent.endpoints[0]
             let end = parent.endpoints[1]

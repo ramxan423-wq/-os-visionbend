@@ -1,6 +1,29 @@
 import XCTest
 
 final class VisionBendNavigationUITests: XCTestCase {
+    func testCoreOffsetCanBeCalculatedFromHome() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-visionbend.units", "0", "-visionbend.language", "en"]
+        app.launch()
+
+        let offset = app.buttons["Offset"]
+        XCTAssertTrue(offset.waitForExistence(timeout: 20), "Offset calculator is missing from Home")
+        offset.tap()
+
+        let rise = app.textFields["Rise / height"]
+        let angle = app.textFields["Bend angle (degrees)"]
+        XCTAssertTrue(rise.waitForExistence(timeout: 10))
+        XCTAssertTrue(angle.exists)
+        rise.tap()
+        rise.typeText("10")
+        angle.tap()
+        angle.typeText("30")
+
+        app.buttons["Calculate"].tap()
+        let spacing = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Mark spacing: 20.00 mm")).firstMatch
+        XCTAssertTrue(spacing.waitForExistence(timeout: 10), "Correct offset spacing was not displayed")
+    }
+
     func testPrimaryTabsCanBeOpened() {
         let app = XCUIApplication()
         // Force a non-English phone locale to verify the English-only fallback.

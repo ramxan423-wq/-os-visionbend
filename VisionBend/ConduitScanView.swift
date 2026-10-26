@@ -8,6 +8,8 @@ struct ConduitScanView: View {
     @State private var image: UIImage?
     @State private var result = "Choose a conduit photo to inspect."
     @State private var showPicker = false
+    @State private var showSourceSelection = false
+    @State private var pickerSource: UIImagePickerController.SourceType = .photoLibrary
     @State private var referenceWidth = ""
     @State private var referencePixels = ""
     @State private var measuredPixels: Double?
@@ -18,7 +20,7 @@ struct ConduitScanView: View {
             if let image {
                 Image(uiImage: image).resizable().scaledToFit()
             }
-            Button(l("Scan conduit photo")) { showPicker = true }
+            Button(l("Scan conduit photo")) { showSourceSelection = true }
             Toggle(l("Use same-plane size reference"), isOn: $useReference)
             if useReference {
                 TextField(l("Reference object actual width (mm)"), text: $referenceWidth).keyboardType(.decimalPad)
@@ -44,16 +46,24 @@ struct ConduitScanView: View {
         }
         .padding()
         .navigationTitle(l("Conduit Scan"))
+        .confirmationDialog("Conduit photo source", isPresented: $showSourceSelection) {
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button("Take Photo") { pickerSource = .camera; showPicker = true }
+            }
+            Button("Choose from Library") { pickerSource = .photoLibrary; showPicker = true }
+        }
         .sheet(isPresented: $showPicker) {
-            ConduitImagePicker { picked in
+            ConduitImagePicker(sourceType: pickerSource) { picked in
                 image = picked
+                measuredPixels = nil
+                result = "Analyzing photo…"
                 scan(picked)
             }
         }
     }
 
     private func scan(_ image: UIImage) {
-        guard let cgImage = image.cgImage else { result = "Image unavailable"; return }
+        guard let cgImage = image.cgImage else { measuredPixels = nil; result = "Image unavailable"; return }
         let request = VNDetectContoursRequest()
         request.maximumImageDimension = 512
         DispatchQueue.global(qos: .userInitiated).async {
@@ -81,18 +91,22 @@ struct ConduitScanView: View {
                     result = candidates.isEmpty ? "No elongated object detected." : String(format: l("Possible conduit shape detected (%d candidates). Confirm manually."), candidates.count)
                 }
             } catch {
-                DispatchQueue.main.async { result = error.localizedDescription }
+                DispatchQueue.main.async {
+                    measuredPixels = nil
+                    result = "Unable to analyze this photo. Try another image."
+                }
             }
         }
     }
 }
 
 private struct ConduitImagePicker: UIViewControllerRepresentable {
+    let sourceType: UIImagePickerController.SourceType
     let onImage: (UIImage) -> Void
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = .photoLibrary
+        picker.sourceType = sourceType
         picker.delegate = context.coordinator
         return picker
     }
