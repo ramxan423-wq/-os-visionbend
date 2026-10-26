@@ -14,6 +14,23 @@ let package = Package(
         .target(
             name: "VisionBend",
             path: "VisionBend",
+            exclude: [
+                "ARBendMarkView.swift",
+                "ARMeasureView.swift",
+                "BendShapePreview.swift",
+                "BenderReferenceView.swift",
+                "CameraLevelView.swift",
+                "ConduitCutOptimizerView.swift",
+                "ConduitEdgeDetector.swift",
+                "ConduitScanView.swift",
+                "ContentView.swift",
+                "DepthConduitScanView.swift",
+                "MultiBendPlannerView.swift",
+                "ProjectExportView.swift",
+                "ProjectHistoryView.swift",
+                "SettingsView.swift",
+                "VisionBendApp.swift"
+            ],
             sources: [
                 "AdvancedBendCalculations.swift",
                 "BendCalculations.swift",
