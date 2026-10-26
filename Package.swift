@@ -6,6 +6,7 @@ import PackageDescription
 // the separate Xcode workflow and physical-device checks.
 let package = Package(
     name: "VisionBendCoreValidation",
+    defaultLocalization: "en",
     products: [
         .library(name: "VisionBend", targets: ["VisionBend"])
     ],
