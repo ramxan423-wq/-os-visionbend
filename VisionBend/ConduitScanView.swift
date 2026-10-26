@@ -14,11 +14,46 @@ struct ConduitScanView: View {
     @State private var referencePixels = ""
     @State private var measuredPixels: Double?
     @State private var useReference = true
+    @State private var conduitEdgeMarks: [CGPoint] = []
+    @State private var referenceEdgeMarks: [CGPoint] = []
+    @State private var markingTarget = "conduit"
+    @State private var manualMeasurement = false
 
     var body: some View {
         VStack(spacing: 16) {
             if let image {
-                Image(uiImage: image).resizable().scaledToFit()
+                GeometryReader { geometry in
+                    let imageRect = fittedImageRect(imageSize: image.size, container: geometry.size)
+                    ZStack {
+                        Image(uiImage: image).resizable().scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                        ForEach(conduitEdgeMarks.indices, id: \.self) { index in
+                            Circle().fill(.orange).frame(width: 13, height: 13)
+                                .overlay(Circle().stroke(.white, lineWidth: 2))
+                                .position(x: imageRect.minX + conduitEdgeMarks[index].x * imageRect.width,
+                                          y: imageRect.minY + conduitEdgeMarks[index].y * imageRect.height)
+                        }
+                        ForEach(referenceEdgeMarks.indices, id: \.self) { index in
+                            Circle().fill(.cyan).frame(width: 13, height: 13)
+                                .overlay(Circle().stroke(.white, lineWidth: 2))
+                                .position(x: imageRect.minX + referenceEdgeMarks[index].x * imageRect.width,
+                                          y: imageRect.minY + referenceEdgeMarks[index].y * imageRect.height)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .gesture(SpatialTapGesture().onEnded { value in
+                        recordManualMark(at: value.location, image: image, viewSize: geometry.size)
+                    })
+                }
+                .frame(height: 270)
+                HStack(spacing: 8) {
+                    Button("Mark conduit edges") { markingTarget = "conduit"; conduitEdgeMarks = []; measuredPixels = nil; manualMeasurement = true }
+                        .buttonStyle(.bordered).tint(markingTarget == "conduit" ? .orange : .secondary)
+                    Button("Mark reference edges") { markingTarget = "reference"; referenceEdgeMarks = []; referencePixels = ""; manualMeasurement = true }
+                        .buttonStyle(.bordered).tint(markingTarget == "reference" ? .cyan : .secondary)
+                }.font(.caption)
+                Text("Tap two edges of the conduit and two edges of a known-size object in the same plane. Orange = conduit; blue = reference. Confirm with calipers.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Button(l("Scan conduit photo")) { showSourceSelection = true }
             Toggle(l("Use same-plane size reference"), isOn: $useReference)
@@ -56,6 +91,10 @@ struct ConduitScanView: View {
             ConduitImagePicker(sourceType: pickerSource) { picked in
                 image = picked
                 measuredPixels = nil
+                referencePixels = ""
+                conduitEdgeMarks = []
+                referenceEdgeMarks = []
+                manualMeasurement = false
                 result = "Analyzing photo…"
                 scan(picked)
             }
@@ -87,16 +126,60 @@ struct ConduitScanView: View {
                     return min(Double(rect.width) * imageWidth, Double(rect.height) * imageHeight)
                 }
                 DispatchQueue.main.async {
-                    measuredPixels = widthPixels
-                    result = candidates.isEmpty ? "No elongated object detected." : String(format: l("Possible conduit shape detected (%d candidates). Confirm manually."), candidates.count)
+                    if !manualMeasurement {
+                        measuredPixels = widthPixels
+                        result = candidates.isEmpty ? "No elongated object detected. You can mark both edges manually." : String(format: l("Possible conduit shape detected (%d candidates). Confirm manually."), candidates.count)
+                    }
                 }
             } catch {
                 DispatchQueue.main.async {
-                    measuredPixels = nil
-                    result = "Unable to analyze this photo. Try another image."
+                    if !manualMeasurement {
+                        measuredPixels = nil
+                        result = "Unable to analyze this photo. Mark its edges manually or try another image."
+                    }
                 }
             }
         }
+    }
+
+    private func fittedImageRect(imageSize: CGSize, container: CGSize) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0, container.width > 0, container.height > 0 else { return .zero }
+        let scale = min(container.width / imageSize.width, container.height / imageSize.height)
+        let width = imageSize.width * scale
+        let height = imageSize.height * scale
+        return CGRect(x: (container.width - width) / 2, y: (container.height - height) / 2, width: width, height: height)
+    }
+
+    private func recordManualMark(at location: CGPoint, image: UIImage, viewSize: CGSize) {
+        let bounds = fittedImageRect(imageSize: image.size, container: viewSize)
+        guard bounds.width > 0, bounds.height > 0, bounds.contains(location) else { return }
+        let point = CGPoint(x: (location.x - bounds.minX) / bounds.width,
+                            y: (location.y - bounds.minY) / bounds.height)
+        manualMeasurement = true
+        if markingTarget == "conduit" {
+            if conduitEdgeMarks.count >= 2 { conduitEdgeMarks.removeAll() }
+            conduitEdgeMarks.append(point)
+        } else {
+            if referenceEdgeMarks.count >= 2 { referenceEdgeMarks.removeAll() }
+            referenceEdgeMarks.append(point)
+        }
+        guard conduitEdgeMarks.count == 2, referenceEdgeMarks.count == 2 else {
+            result = "Mark two orange conduit edges and two blue reference edges."
+            return
+        }
+        let conduitWidth = hypot((conduitEdgeMarks[0].x - conduitEdgeMarks[1].x) * image.size.width,
+                                 (conduitEdgeMarks[0].y - conduitEdgeMarks[1].y) * image.size.height)
+        let referenceWidthPixels = hypot((referenceEdgeMarks[0].x - referenceEdgeMarks[1].x) * image.size.width,
+                                         (referenceEdgeMarks[0].y - referenceEdgeMarks[1].y) * image.size.height)
+        guard conduitWidth.isFinite, referenceWidthPixels.isFinite, conduitWidth > 1, referenceWidthPixels > 1 else {
+            result = "Selected edges are too close together. Mark the opposite sides of each object."
+            measuredPixels = nil
+            return
+        }
+        measuredPixels = conduitWidth
+        referencePixels = String(format: "%.3f", referenceWidthPixels)
+        useReference = true
+        result = "Manual edge-to-edge ratio is ready. Enter the reference object's actual width in mm. Calipers are still required for verification."
     }
 }
 

@@ -1,19 +1,8 @@
 import SwiftUI
 
-struct BenderProfile: Codable, Identifiable {
-    var id = UUID()
-    var manufacturer: String
-    var model: String
-    var conduitType: String
-    var conduitSize: String
-    var takeUp: String
-    var radius: String
-    var notes: String
-    var source: String
-}
-
 struct BenderReferenceView: View {
     @AppStorage("visionbend.language") private var language = "system"
+    @AppStorage("visionbend.units") private var selectedUnits = 0
     private func l(_ key: String) -> String { VisionBendLocalization.text(key, language: language) }
     @AppStorage("visionbend.benderProfiles.v1") private var storedProfiles = Data()
     @State private var profiles: [BenderProfile] = []
@@ -25,6 +14,7 @@ struct BenderReferenceView: View {
     @State private var radius = ""
     @State private var notes = ""
     @State private var source = ""
+    @State private var referenceMark = "Arrow"
     @State private var message = ""
     private let brands = ["Greenlee", "Klein Tools", "IDEAL", "Gardner Bender", "Other"]
     private let conduitTypes = ["EMT", "IMC", "RMC", "PVC", "Other"]
@@ -56,6 +46,10 @@ struct BenderReferenceView: View {
                 TextField(l("Conduit trade size"), text: $conduitSize)
                 TextField(l("Manual take-up (selected units)"), text: $takeUp).keyboardType(.decimalPad)
                 TextField(l("Centerline radius (selected units)"), text: $radius).keyboardType(.decimalPad)
+                Picker("Reference mark for first 90°", selection: $referenceMark) {
+                    Text("Arrow").tag("Arrow")
+                    Text("Hook Front").tag("Hook Front")
+                }
                 TextField(l("Manufacturer manual / page / URL"), text: $source)
                 TextField(l("Calibration and field notes"), text: $notes)
                 Button(l("Save Bender Profile")) { saveProfile() }
@@ -68,6 +62,8 @@ struct BenderReferenceView: View {
                         Text(item.manufacturer + " " + item.model).font(.headline)
                         Text(item.conduitType + " " + item.conduitSize)
                         Text("Take-up: " + item.takeUp + " · Radius: " + item.radius)
+                        Text("Units: " + (item.unitCode.flatMap(MeasurementUnit.init(rawValue:))?.symbol ?? "not recorded — re-enter to calibrate"))
+                            .font(.caption).foregroundStyle(.secondary)
                         if !item.source.isEmpty { Text("Source: " + item.source).font(.caption) }
                     }
                 }
@@ -91,7 +87,7 @@ struct BenderReferenceView: View {
             message = "Enter a model, conduit size, nonnegative take-up and positive radius."
             return
         }
-        profiles.insert(BenderProfile(manufacturer: manufacturer, model: model, conduitType: conduitType, conduitSize: conduitSize, takeUp: takeUp, radius: radius, notes: notes, source: source), at: 0)
+        profiles.insert(BenderProfile(manufacturer: manufacturer, model: model, conduitType: conduitType, conduitSize: conduitSize, takeUp: takeUp, radius: radius, notes: notes, source: source, unitCode: selectedUnits, referenceMark: referenceMark), at: 0)
         persist()
         message = "Profile saved on this device."
     }

@@ -34,6 +34,12 @@ struct MultiBendPlannerView: View {
     @State private var presetRise = "150"
     @State private var presetAngle = "30"
     @State private var presetRun = "300"
+    @State private var presetStart = "300"
+    @State private var segmentCount = "5"
+    @State private var backToBackInstructions = ""
+    @State private var confirmedStarReference = false
+    @State private var selectedSavedProfileID = ""
+    @AppStorage("visionbend.benderProfiles.v1") private var storedBenderProfiles = Data()
     @State private var obstructionDistance = ""
     @State private var saddleZ = ""
     @State private var saddleL1 = ""
@@ -50,6 +56,9 @@ struct MultiBendPlannerView: View {
     @State private var showAdvancedBenderOptions = false
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
+    private var savedBenderProfiles: [BenderProfile] {
+        (try? JSONDecoder().decode([BenderProfile].self, from: storedBenderProfiles)) ?? []
+    }
 
     private var currentUnit: MeasurementUnit { MeasurementUnit(rawValue: selectedUnits) ?? .millimeters }
     private func dimension(_ text: String) -> Double? { FieldInputNumber.parse(text, unit: currentUnit) }
@@ -72,9 +81,37 @@ struct MultiBendPlannerView: View {
                 Picker(l("Shape"), selection: $preset) {
                     ForEach(["Custom", "Offset", "90° Stub", "3-Point Saddle", "4-Point Saddle", "Kick", "Rolling Offset", "Back-to-Back 90°", "Compound 90°", "Segmented Arc"], id: \.self) { Text($0) }
                 }
+                .onChange(of: preset) { newPreset in
+                    backToBackInstructions = ""
+                    if ["90° Stub", "Back-to-Back 90°", "Compound 90°"].contains(newPreset) { presetAngle = "90" }
+                }
                 TextField(l("Rise / desired stub"), text: $presetRise).keyboardType(.decimalPad)
                 TextField(l("Angle"), text: $presetAngle).keyboardType(.decimalPad)
                 TextField(l("Run / clearance"), text: $presetRun).keyboardType(.decimalPad)
+                if !["Custom", "90° Stub", "Back-to-Back 90°"].contains(preset) {
+                    TextField("First theoretical station from conduit start (" + unitLabel + ")", text: $presetStart)
+                        .keyboardType(.decimalPad)
+                }
+                if preset == "Segmented Arc" {
+                    TextField("Number of equal bends (2–30)", text: $segmentCount)
+                        .keyboardType(.numberPad)
+                    Text("Requires a verified centerline radius. Positions are centerline stations, not shoe reference marks.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if preset == "Back-to-Back 90°" {
+                    Toggle("I confirmed the second 90° star mark in my bender manual", isOn: $confirmedStarReference)
+                    Text("First bend uses a calibrated arrow mark. The second mark is measured AFTER bending, from the back edge of the first 90°.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if ["90° Stub", "Back-to-Back 90°"].contains(preset) {
+                    Picker("Saved bender calibration", selection: $selectedSavedProfileID) {
+                        Text("Select saved profile or enter below").tag("")
+                        ForEach(savedBenderProfiles) { profile in
+                            Text("\(profile.manufacturer) \(profile.model) · \(profile.conduitSize)").tag(profile.id.uuidString)
+                        }
+                    }
+                    .onChange(of: selectedSavedProfileID) { _ in applySavedBenderProfile() }
+                }
                 if preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") {
                     TextField(l("Distance to obstruction"), text: $obstructionDistance).keyboardType(.decimalPad)
                 }
@@ -102,7 +139,7 @@ struct MultiBendPlannerView: View {
                     Text(l("Only exact installed table cells auto-load. No interpolation.")).font(.caption)
                 }
                 Button(l("Generate Marks")) { generatePreset() }
-                Text(l("Offset marks are theoretical. A 90° stub requires the calibrated bender arrow take-up below."))
+                Text(l("Offset marks are theoretical. A 90° stub uses your verified bender take-up, not a guessed deduction."))
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section(l("Add bend")) {
@@ -113,6 +150,10 @@ struct MultiBendPlannerView: View {
                 }
                 Button(l("Add Mark")) { addMark() }
                 if !message.isEmpty { Text(message).foregroundStyle(.red).font(.caption) }
+                if !backToBackInstructions.isEmpty {
+                    Text(backToBackInstructions).font(.callout).foregroundStyle(.primary)
+                        .padding(10).background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                }
             }
             Section {
                 Toggle(VisionBendLocalization.text("Advanced bender options", turkish: "Gelişmiş bükücü ayarları", language: language), isOn: $showAdvancedBenderOptions)
@@ -242,6 +283,7 @@ struct MultiBendPlannerView: View {
         change(&markPosition)
         change(&presetRise)
         change(&presetRun)
+        change(&presetStart)
         change(&obstructionDistance)
         change(&saddleZ)
         change(&saddleL1)
@@ -264,8 +306,11 @@ struct MultiBendPlannerView: View {
 
     private func applyVerifiedModel(_ id: String) {
         guard let item = VerifiedBenderCatalog.entries.first(where: { $0.id == id }) else { return }
+        selectedSavedProfileID = ""
         let factor = selectedUnits == 0 ? 25.4 : selectedUnits == 1 ? 2.54 : 1.0
         confirmedIMCHardware = false
+        confirmedStarReference = false
+        backToBackInstructions = ""
         saddleTableKey = ""
         saddleZ = ""; saddleL1 = ""; saddleL2 = ""
         manufacturer = item.brand
@@ -286,20 +331,56 @@ struct MultiBendPlannerView: View {
             : "Verified deduct and radius loaded. Check reference mark and field springback."
     }
 
+    private func applySavedBenderProfile() {
+        guard let profile = savedBenderProfiles.first(where: { $0.id.uuidString == selectedSavedProfileID }) else { return }
+        guard let code = profile.unitCode, let originalUnit = MeasurementUnit(rawValue: code),
+              let savedTakeUp = FieldInputNumber.parse(profile.takeUp, unit: originalUnit), savedTakeUp >= 0,
+              let savedRadius = FieldInputNumber.parse(profile.radius, unit: originalUnit), savedRadius > 0,
+              let originalMark = profile.referenceMark, ["arrow", "hook front"].contains(originalMark.lowercased()) else {
+            message = "This saved profile has missing units, values or reference mark. Re-enter and save it in Bender Reference before using it for physical marks."
+            showAdvancedBenderOptions = true
+            return
+        }
+        verifiedModelID = ""
+        confirmedStarReference = false
+        backToBackInstructions = ""
+        manufacturer = profile.manufacturer
+        benderModel = profile.model
+        conduitType = profile.conduitType
+        tradeSize = profile.conduitSize
+        referenceMark = originalMark
+        takeUp = String(format: "%.4f", originalUnit.convert(savedTakeUp, to: currentUnit))
+        centerlineRadius = String(format: "%.4f", originalUnit.convert(savedRadius, to: currentUnit))
+        correction = "0"
+        manualSource = profile.source
+        message = "Saved field profile loaded. Confirm the exact model, manual, reference marks and springback on the real bender."
+    }
+
     private var requiresIMCHardware: Bool {
         verifiedModelID == "greenlee-555cx-imc-onehalf" || verifiedModelID == "greenlee-555cx-imc-two" || (verifiedModelID.contains("-12580-imc-") && (tradeSize == "1-1/2 in" || tradeSize == "2 in"))
     }
 
     private func generatePreset() {
+        backToBackInstructions = ""
         if requiresIMCHardware && !confirmedIMCHardware {
             message = "Install and confirm both 28008 shoe group and 13856 IMC squeeze roller first."
             return
         }
         func number(_ value: String) -> Double? { dimension(value) }
-        guard let rise = number(presetRise), let angle = number(presetAngle), let run = number(presetRun),
+        guard let rise = number(presetRise), let angle = number(presetAngle) else {
+            message = "Enter valid dimensions and angle for this preset."
+            return
+        }
+        let run = number(presetRun) ?? (preset == "90° Stub" ? 0 : .nan)
+        guard
               rise.isFinite, angle.isFinite, run.isFinite,
-              rise > 0, angle > 0, angle <= 90, run > 0, length > 0 else {
-            message = "Enter valid positive dimensions and angle up to 90 degrees."
+              rise > 0, angle > 0, angle <= (preset == "Segmented Arc" ? 180 : 90),
+              (run > 0 || preset == "90° Stub"), length > 0 else {
+            message = "Enter valid positive dimensions and an angle supported by this preset."
+            return
+        }
+        if ["90° Stub", "Back-to-Back 90°", "Compound 90°"].contains(preset) && abs(angle - 90) > 0.001 {
+            message = "This preset requires a 90-degree bend."
             return
         }
         if (preset == "3-Point Saddle" || preset == "4-Point Saddle") && !saddleTableKey.isEmpty {
@@ -310,11 +391,53 @@ struct MultiBendPlannerView: View {
         }
         if preset == "90° Stub" {
             desiredStub = presetRise
-            message = "Use verified bender take-up and Add Calibrated Stub Mark."
+            guard let position = calibratedStubPosition(for: rise) else {
+                showAdvancedBenderOptions = true
+                return
+            }
+            guard FieldBendGeometry.isFeasible(markPositions: [position], conduitLength: length, minStraight: clearance) else {
+                message = "The calibrated stub mark is outside the entered conduit length."
+                return
+            }
+            marks = [BendMark(position: position, angle: 90, direction: "Up")]
+            pdfURL = nil
+            message = "90° stub mark generated using the recorded bender take-up and reference mark. Confirm the real bender and springback."
             return
         }
-        let first = length * 0.1
+        if preset == "Back-to-Back 90°" {
+            desiredStub = presetRise
+            guard confirmedStarReference else {
+                message = "Confirm the manufacturer's star reference on your exact bender before laying out the second 90°."
+                return
+            }
+            guard !verifiedModelID.hasPrefix("greenlee-555"), !benderModel.lowercased().contains("555") else {
+                message = "The 555 shoe's star-reference back-to-back method is not verified. Use its exact machine manual; no fabricated mark will be generated."
+                return
+            }
+            guard let first = calibratedStubPosition(for: rise),
+                  let take = number(takeUp),
+                  let fieldCorrection = number(correction),
+                  let plan = try? BendPlanGeometry.backToBackGuide(firstStub: rise, takeUp: take, backToBackDistance: run, fieldCorrection: fieldCorrection),
+                  abs(plan.firstArrow - first) < 0.0001 else {
+                showAdvancedBenderOptions = true
+                return
+            }
+            guard FieldBendGeometry.isFeasible(markPositions: [first], conduitLength: length, minStraight: clearance) else {
+                message = "First arrow mark is outside the entered conduit length."
+                return
+            }
+            marks = [BendMark(position: first, angle: 90, direction: "Up")]
+            backToBackInstructions = String(format: "STEP 1: Mark %.2f %@ from the conduit start; align your documented %@ reference and make the first 90°. STEP 2: On the BENT conduit, measure %.2f %@ from the BACK EDGE of that first 90°. Align the manufacturer's STAR symbol with this new mark and bend the other leg in the opposite direction. The second mark is RELATIVE and cannot safely be drawn as a pre-bend absolute mark.", first, unitLabel, referenceMark, plan.starFromFirstBack, unitLabel)
+            pdfURL = nil
+            message = "Back-to-back guide ready: first absolute arrow mark plus second post-bend star instruction."
+            return
+        }
+        guard let first = number(presetStart), first.isFinite, first >= 0 else {
+            message = "Enter a valid theoretical starting station from the conduit end."
+            return
+        }
         let spacing = rise / sin(angle * .pi / 180)
+        guard spacing.isFinite else { message = "Calculated mark spacing is too large."; return }
         var steps: [(Double, Double, String)] = []
         switch preset {
         case "Offset":
@@ -346,7 +469,7 @@ struct MultiBendPlannerView: View {
                 break
             }
             guard angle <= 45 else { message = "Outer saddle angle must be at most 45 degrees."; return }
-            let middle = length / 2
+            let middle = run // Obstruction center measured from conduit start.
             steps = [(middle - spacing, angle, "Up"), (middle, 2 * angle, "Down"), (middle + spacing, angle, "Up")]
         case "4-Point Saddle":
             if verifiedModelID.hasPrefix("greenlee-555") {
@@ -362,22 +485,29 @@ struct MultiBendPlannerView: View {
             let third = first + spacing + run
             steps = [(first, angle, "Up"), (first + spacing, angle, "Down"), (third, angle, "Down"), (third + spacing, angle, "Up")]
         case "Kick":
+            guard (try? MoreBendCalculations.kickTravel(rise: rise, angleDegrees: angle)) != nil else {
+                message = "Kick rise or angle is invalid."; return
+            }
             steps = [(first, angle, "Up")]
         case "Rolling Offset":
             let trueRise = hypot(rise, run)
             steps = [(first, angle, "Up"), (first + trueRise / sin(angle * .pi / 180), angle, "Down")]
-        case "Back-to-Back 90°":
-            steps = [(first, 90, "Up"), (first + run, 90, "Down")]
         case "Segmented Arc":
-            let n = 5
-            steps = (0..<n).map { (first + Double($0) * run / Double(n - 1), angle / Double(n), "Up") }
-        case "Compound 90°":
-            if verifiedModelID.hasPrefix("greenlee-555") {
-                message = "No verified Greenlee 555 compound 90 physical mark table. Theoretical stations cannot be used as hook-front marks."
+            guard let radius = number(centerlineRadius), let count = Int(segmentCount),
+                  let plan = try? BendPlanGeometry.segmentedArc(radius: radius, totalAngle: angle, segments: count, arcStart: first) else {
+                showAdvancedBenderOptions = true
+                message = "Enter a verified centerline radius and 2–30 segments. Arc stations are theoretical, not bender arrow marks."
                 return
             }
-            guard let radius = number(centerlineRadius), radius > 0 else { message = "Enter verified bend radius."; return }
-            steps = [(rise, 90, "Up"), (rise + run + radius * .pi / 2, 90, "Right")]
+            steps = plan.stations.map { ($0, plan.anglePerBend, "Up") }
+        case "Compound 90°":
+            guard let radius = number(centerlineRadius),
+                  let stations = try? BendPlanGeometry.compoundNinetyStations(firstStation: first, tangentBetweenArcs: run, radius: radius) else {
+                showAdvancedBenderOptions = true
+                message = "Enter a documented centerline bend radius to calculate compound-90 centerline geometry."
+                return
+            }
+            steps = [(stations.0, 90, "Up"), (stations.1, 90, "Right")]
         default:
             message = "Choose a preset or add custom marks."
             return
@@ -390,9 +520,20 @@ struct MultiBendPlannerView: View {
         }
         marks = proposed
         pdfURL = nil
-        message = preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") ? "Greenlee 555 X-table marks: align each mark with front hook edge, rotate conduit 180 degrees for second bend. Approximate multiplier; verify minimum offset and springback." : preset == "Compound 90°" ? "Theoretical 90 + 90 bend stations generated. NOT bender arrow marks; confirm model-specific references and test bend." : preset == "Rolling Offset"
-            ? String(format: "Roll orientation %.1f degrees. Verify orientation and bender calibration.", atan2(run, rise) * 180 / .pi)
-            : "Theoretical marks ready. Confirm reference marks, bend direction, radius and springback."
+        if preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555") {
+            message = "Greenlee 555 X-table marks: align each mark with front hook edge, rotate conduit 180 degrees for second bend. Approximate multiplier; verify minimum offset and springback."
+        } else if preset == "Compound 90°" {
+            message = "Radius-based 90 + 90 centerline stations generated. NOT bender arrow marks; confirm model-specific references and test bend."
+        } else if preset == "Segmented Arc" {
+            message = "Radius-based segmented centerline stations generated. The exact shoe marks and tangent lengths require a verified segment-bender manual."
+        } else if preset == "Rolling Offset" {
+            message = String(format: "Roll orientation %.1f degrees. Verify orientation and bender calibration.", atan2(run, rise) * 180 / .pi)
+        } else if preset == "Kick" {
+            let travel = (try? MoreBendCalculations.kickTravel(rise: rise, angleDegrees: angle)) ?? 0
+            message = String(format: "Kick starts at %.2f %@ (user supplied); theoretical horizontal travel %.2f %@. Confirm reference mark and springback.", first, unitLabel, travel, unitLabel)
+        } else {
+            message = "Theoretical marks ready. Confirm reference marks, bend direction, radius and springback."
+        }
     }
 
     private func addMark() {
@@ -412,10 +553,10 @@ struct MultiBendPlannerView: View {
         message = ""
     }
 
-    private func addCalibratedMark() {
+    private func calibratedStubPosition(for desired: Double) -> Double? {
         if requiresIMCHardware && !confirmedIMCHardware {
             message = "Confirm 28008 shoe group AND 13856 IMC squeeze roller before marking."
-            return
+            return nil
         }
         guard !manufacturer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !benderModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -423,18 +564,27 @@ struct MultiBendPlannerView: View {
               !manualSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               ["arrow", "hook front"].contains(referenceMark.lowercased()),
               let take = dimension(takeUp),
-              let offset = dimension(correction),
-              let desired = dimension(desiredStub) else {
-            message = "Enter documented arrow or hook-front deduct and exact model. Star/other marks need a different formula."
-            return
+              let offset = dimension(correction), desired.isFinite, desired > 0 else {
+            message = "Select a verified bender profile or enter an exact model, manual source, arrow/hook-front deduct and field correction in Advanced bender options."
+            return nil
         }
-        if verifiedModelID.hasPrefix("greenlee-555"), desired < take + (selectedUnits == 0 ? 50.8 : selectedUnits == 1 ? 5.08 : 2) {
-            message = "Greenlee 555 minimum stub is deduct + 2 inches. Increase the desired stub."; return
+        if (verifiedModelID.hasPrefix("greenlee-555") || (manufacturer.lowercased().contains("greenlee") && benderModel.contains("555"))),
+           desired < take + (selectedUnits == 0 ? 50.8 : selectedUnits == 1 ? 5.08 : 2) {
+            message = "Greenlee 555 minimum stub is deduct + 2 inches. Increase the desired stub."; return nil
         }
         let calibration = BenderCalibration(manufacturer: manufacturer, model: benderModel, conduit: conduitType, tradeSize: tradeSize, referenceMark: referenceMark, takeUp: take, fieldCorrection: offset, source: manualSource)
-        guard let position = calibration.stubPosition(for: desired),
+        guard let position = calibration.stubPosition(for: desired), position > 0 else {
+            message = "Desired stub is shorter than the documented bender take-up or field correction is invalid."
+            return nil
+        }
+        return position
+    }
+
+    private func addCalibratedMark() {
+        guard let desired = dimension(desiredStub),
+              let position = calibratedStubPosition(for: desired),
               FieldBendGeometry.isFeasible(markPositions: marks.map(\.position) + [position], conduitLength: length, minStraight: clearance) else {
-            message = "Calibrated mark is invalid or conflicts with existing marks."
+            if message.isEmpty { message = "Calibrated mark is invalid or conflicts with existing marks." }
             return
         }
         marks.append(BendMark(position: position, angle: 90, direction: direction))
@@ -475,6 +625,10 @@ struct MultiBendPlannerView: View {
             for (index, mark) in allMarks.enumerated() where index / marksPerPage == page {
                 let line = String(format: "%d. From start: %.2f  |  Angle: %.1f deg  |  %@", index + 1, mark.position, mark.angle, mark.direction)
                 line.draw(at: CGPoint(x: 36, y: 225 + CGFloat(index % marksPerPage) * 23), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
+            }
+            if !backToBackInstructions.isEmpty {
+                backToBackInstructions.draw(in: CGRect(x: 36, y: 685, width: 520, height: 74),
+                                            withAttributes: [.font: UIFont.systemFont(ofSize: 10)])
             }
             let caution = "SCHEMATIC ONLY. Verify bender reference and calibration before field use."
             caution.draw(in: CGRect(x: 36, y: 760, width: 520, height: 55), withAttributes: [.font: UIFont.systemFont(ofSize: 10)])

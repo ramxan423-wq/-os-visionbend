@@ -11,7 +11,8 @@ struct BendProjectExport: Codable {
 }
 
 struct BendExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json, .commaSeparatedText] }
+    // CSV is export-only. Importing CSV as JSON would fail, so do not advertise it as readable.
+    static var readableContentTypes: [UTType] { [.json] }
     static var writableContentTypes: [UTType] { [.json, .commaSeparatedText] }
     var project: BendProjectExport
     init(project: BendProjectExport) { self.project = project }
@@ -33,6 +34,8 @@ struct ProjectExportView: View {
     let project: BendProjectExport
     @State private var exportJSON = false
     @State private var exportCSV = false
+    @State private var showExportError = false
+    @State private var exportErrorMessage = ""
     var body: some View {
         VStack(spacing: 16) {
             Button("Export JSON") { exportJSON = true }
@@ -42,7 +45,23 @@ struct ProjectExportView: View {
             }
         }
         .padding()
-        .fileExporter(isPresented: $exportJSON, document: BendExportDocument(project: project), contentType: .json, defaultFilename: "VisionBend-Project") { _ in }
-        .fileExporter(isPresented: $exportCSV, document: BendExportDocument(project: project), contentType: .commaSeparatedText, defaultFilename: "VisionBend-Project") { _ in }
+        .fileExporter(isPresented: $exportJSON, document: BendExportDocument(project: project), contentType: .json, defaultFilename: "VisionBend-Project") { result in
+            reportExportError(result)
+        }
+        .fileExporter(isPresented: $exportCSV, document: BendExportDocument(project: project), contentType: .commaSeparatedText, defaultFilename: "VisionBend-Project") { result in
+            reportExportError(result)
+        }
+        .alert("Export could not be completed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportErrorMessage)
+        }
+    }
+
+    private func reportExportError(_ result: Result<URL, Error>) {
+        if case .failure(let error) = result {
+            exportErrorMessage = error.localizedDescription
+            showExportError = true
+        }
     }
 }

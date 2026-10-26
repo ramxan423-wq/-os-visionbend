@@ -34,7 +34,9 @@ let package = Package(
             sources: [
                 "AdvancedBendCalculations.swift",
                 "BendCalculations.swift",
+                "BendPlanGeometry.swift",
                 "BenderCalibration.swift",
+                "BenderProfile.swift",
                 "ConduitCutInput.swift",
                 "ConduitDiameterMath.swift",
                 "ExtraBendCalculations.swift",

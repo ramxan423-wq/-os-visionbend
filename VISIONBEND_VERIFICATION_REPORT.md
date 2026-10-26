@@ -29,18 +29,18 @@ Example calculated values: 10 mm rise / 30° offset → 20 mm theoretical mark s
 | Five main tabs | Source inspected | Navigation wired; XCUITest authored but not executed on final commit |
 | English-only interface | Executed Swift XCTest for text resolver | Legacy language settings fall back to English; all iOS screen labels need visual review |
 | Greenlee/Klein bender references | Source inspected | Entries and manufacturer source links exist; not every value independently checked against current official manuals or a physical test bend |
-| Manual bender profiles | Source inspected | Save/delete in local AppStorage wired; no actual iPhone persistence test |
+| Manual bender profiles | Source inspected | Save/delete in local AppStorage with explicit unit/reference metadata; saved-profile selector wired to planner; iPhone persistence and unit-switch tests pending |
 | Model-calibrated stub | Executed Swift calculation + inspected planner | Mathematics tested; user must supply exact model/size/reference/take-up |
-| Multibend planner | Source inspected | Ten preset selections and custom mark creation wired; many outputs explicitly theoretical, not certified physical marking coordinates |
+| Multibend planner | Source inspected | Ten preset selections and custom mark creation wired; 90° stub now uses documented calibration, back-to-back requires a second post-bend STAR procedure, Kick uses a user-entered starting station, segmented arc uses radius/segment count, compound 90 uses radius/tangent inputs; manufacturer-specific physical marks still require field tests |
 | 2D marking drawing | Source inspected | Schematic only, no dimensioned production CAD drawing |
-| 3D preview | Source inspected | SceneKit idealized shape; not an independently validated bend-radius simulation |
+| 3D preview | Source inspected | SceneKit theoretical radius path now uses finer midpoint arc stepping; accuracy and visuals not confirmed on iPhone |
 | Cut optimizer | Executed unit tests for input + inspected algorithm | First-fit decreasing straight stock; no bent developed-length optimization or UI execution |
 | Saved bend projects | Source inspected | UserDefaults add/edit/delete wired; reopen-and-restore test pending |
-| JSON/CSV export | Source inspected | FileDocument exporters wired; actual exported files not opened and inspected on iPhone |
+| JSON/CSV export | Source inspected | FileDocument exporters wired, errors visible; actual exported files not opened and inspected on iPhone |
 | PDF mark sheets | Source inspected | UIGraphicsPDFRenderer + 20-item pagination wired; rendered PDF inspection pending |
 | Camera level | Source inspected | Permission request, live camera preview, motion readings, zero/reset wired; physical phone tilt and camera test pending |
-| Photo conduit scan | Source inspected | Camera capture and photo-library input wired; contour estimate needs a same-plane known-size reference and is **not verified automatic diameter detection** |
-| LiDAR depth scan | Source inspected | Five-frame provisional reading and unsupported-device guard wired; LiDAR-capable device + calipers test pending |
+| Photo conduit scan | Source inspected | Camera capture, photo-library input, and manual two-point conduit + two-point same-plane reference calibration wired; automatic contour estimate still **not verified diameter detection** |
+| LiDAR depth scan | Source inspected | Horizontal/vertical image-to-focal-axis mismatch fixed, five-frame provisional reading and unsupported-device guard wired; LiDAR device + calipers test pending |
 | AR point-to-point distance | Source inspected | Manual two-tap surface tracking; no tape-measure accuracy comparison |
 | AR conduit marks | Source inspected | Manual start/end selection, proportional virtual markers, reset fix; not automatic pipe recognition or real bender mark validation |
 | Direct paid download | Source inspected | Subscription/paywall code removed; **US $9.99 storefront price must be set/verified in App Store Connect** |
@@ -51,7 +51,7 @@ Example calculated values: 10 mm rise / 30° offset → 20 mm theoretical mark s
 - The older promotional material mentions **33 calculation modules**; current Home shows **eight** and planning offers ten presets, some overlapping and theoretical. Do not claim 33 verified iOS tools.
 - **CAD Drawing Workshop**, production CAD editing, and **DXF/SVG export** are not present. PDF/CSV/JSON export is not the same as CAD/DXF/SVG.
 - **Project backup/restore across devices** is not implemented; local saved calculations are not cloud sync.
-- Several math helpers (back-to-back, kicked 90, parallel kick, segmented 90, setback/gain) exist but are not each exposed as an independently verified, full physical-marking screen.
+- Several math helpers (parallel kick, kicked 90, setback/gain) exist but are not each exposed as an independently verified, full physical-marking screen. Back-to-back and segmented arc now have explicit guided planning, but do not claim manufacturer-specific automatic shoe marks without a manual.
 
 ## Device and release blockers
 

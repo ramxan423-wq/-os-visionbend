@@ -54,10 +54,14 @@ struct BendShapePreview: View {
             default: axis = SIMD3<Float>(0, 0, 1)
             }
             if centerlineRadius > 0 {
-                let pieces = 20
+                // Midpoint integration follows the circular centerline much more
+                // closely than rotating to the end of each chord before moving.
+                let pieces = 48
                 for _ in 0..<pieces {
-                    heading = simd_normalize(simd_act(simd_quatf(angle: radians / Float(pieces), axis: axis), heading))
+                    let halfStep = radians / Float(pieces * 2)
+                    heading = simd_normalize(simd_act(simd_quatf(angle: halfStep, axis: axis), heading))
                     segment(arcLength / Double(pieces))
+                    heading = simd_normalize(simd_act(simd_quatf(angle: halfStep, axis: axis), heading))
                 }
                 previous = startArc + arcLength
             } else {

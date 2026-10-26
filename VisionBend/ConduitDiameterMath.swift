@@ -7,6 +7,20 @@ struct DiameterEstimate {
 }
 
 enum ConduitDiameterMath {
+    /// Contour coordinates are normalized. For a horizontal conduit the diameter
+    /// spans IMAGE HEIGHT (focal Y); for a vertical conduit IMAGE WIDTH (focal X).
+    static func pixelProjection(separationNormalized: Double, horizontalConduit: Bool,
+                                imageWidth: Double, imageHeight: Double,
+                                focalX: Double, focalY: Double) -> (spanPixels: Double, focalPixels: Double)? {
+        guard separationNormalized.isFinite, separationNormalized > 0,
+              imageWidth.isFinite, imageHeight.isFinite, imageWidth > 0, imageHeight > 0,
+              focalX.isFinite, focalY.isFinite, focalX > 0, focalY > 0 else { return nil }
+        let span = separationNormalized * (horizontalConduit ? imageHeight : imageWidth)
+        let focal = horizontalConduit ? focalY : focalX
+        guard span.isFinite, span > 0 else { return nil }
+        return (span, focal)
+    }
+
     static func calibratedDiameter(conduitPixels: Double, referencePixels: Double, referenceMillimeters: Double, pixelUncertainty: Double = 2) -> DiameterEstimate? {
         guard conduitPixels.isFinite, referencePixels.isFinite, referenceMillimeters.isFinite, pixelUncertainty.isFinite,
               conduitPixels > 0, referencePixels > 0, referenceMillimeters > 0, pixelUncertainty >= 0 else { return nil }

@@ -53,7 +53,7 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
                 }
                 let rect = edgePair == nil ? nil : candidates.max { a, b in a.width * a.height < b.width * b.height }
                 var estimated: Double?
-                if let rect, rect.width > rect.height {
+                if let rect {
                     let depthWidth = CVPixelBufferGetWidth(depthBuffer)
                     let depthHeight = CVPixelBufferGetHeight(depthBuffer)
                     // Vision normalized coordinates are bottom-left; depth map is top-left.
@@ -69,12 +69,19 @@ final class DepthConduitScanner: NSObject, ObservableObject, ARSessionDelegate {
                             if z.isFinite && z > 0.1 && z < 4 && focalX > 0 {
                                 // Rough projected width only; contour may be shadow or edge.
                                 if let pair = edgePair, pair.confidence >= 0.35 {
-                                    let horizontal = abs(pair.first.x - pair.second.x) < abs(pair.first.y - pair.second.y)
+                                    let horizontalConduit = abs(pair.first.x - pair.second.x) < abs(pair.first.y - pair.second.y)
                                     let imageHeight = Double(CVPixelBufferGetHeight(image))
                                     let focalY = Double(camera.intrinsics.columns.1.y)
-                                    let spanPixels = pair.separationNormalized * (horizontal ? imageWidth : imageHeight)
-                                    let focalPixels = horizontal ? focalX : focalY
-                                    if focalPixels > 0 { estimated = spanPixels * Double(z) / focalPixels * 1000 }
+                                    if let projection = ConduitDiameterMath.pixelProjection(
+                                        separationNormalized: pair.separationNormalized,
+                                        horizontalConduit: horizontalConduit,
+                                        imageWidth: imageWidth, imageHeight: imageHeight,
+                                        focalX: focalX, focalY: focalY) {
+                                        estimated = ConduitDiameterMath.physicalDiameter(
+                                            widthPixels: projection.spanPixels,
+                                            depthMeters: Double(z),
+                                            focalLengthPixels: projection.focalPixels)?.millimeters
+                                    }
                                 }
                             }
                         }
