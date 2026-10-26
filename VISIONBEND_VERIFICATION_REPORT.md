@@ -11,11 +11,11 @@ Date: 2026-10-26. Repository: `ramxan423-wq/-os-visionbend`.
 
 ## Executed calculation checks
 
-The Foundation-only Swift package compiled and all **46 XCTest cases** executed successfully in [GitHub Actions run 40359797721](https://github.com/ramxan423-wq/-os-visionbend/actions/runs/40359797721) at commit `217eccb25a89b371dad7f03374bf77b574f4ae8c`. This is a genuine Swift run, **not an iOS app build**. It includes:
+The Foundation-only Swift package compiled and all **49 XCTest cases** executed successfully in [GitHub Actions run 40360643455](https://github.com/ramxan423-wq/-os-visionbend/actions/runs/40360643455) at commit `92c5f099eca33b7385aa16076ba6a1dccd1b9e88`. The same run successfully parsed **all iOS Swift source files** for syntax errors. These are genuine compiler checks, **not an iOS app build**. They include:
 
 1. The eight Home calculations: offset (mark spacing and theoretical shrink), three-point saddle, kick, arc length, rolling offset, 90° stub, four-point saddle spacing, and compound-90 **planar geometry**.
 2. Unit conversions and fractional-inch input, decimal-comma cut lists, and invalid or overflowing numeric inputs.
-3. Bender take-up calibration, theoretical field geometry, camera diameter formula (not camera recognition), level-math helpers, and the English-only localization fallback.
+3. Bender take-up calibration, manufacturer catalog identity/table integrity, theoretical field geometry, camera diameter formula (not camera recognition), level-math helpers, and the English-only localization fallback.
 
 Example calculated values: 10 mm rise / 30° offset → 20 mm theoretical mark spacing and 2.6795 mm theoretical shrink; 100 mm stub with verified 15 mm take-up → 85 mm mark. These values do not certify field-marking accuracy.
 
