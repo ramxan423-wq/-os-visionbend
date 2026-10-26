@@ -1,0 +1,24 @@
+name: VisionBend Foundation calculator tests
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Package.swift'
+      - 'VisionBend/**/*.swift'
+      - 'VisionBendTests/**/*.swift'
+      - '.github/workflows/visionbend-core-swift.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  swift-core-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Swift version
+        run: swift --version
+      - name: Compile and run Foundation-only calculation tests
+        run: swift test --parallel

@@ -5,7 +5,7 @@ This matrix distinguishes **verified automated checks** from **physical-device c
 | Area | Scenarios | Execution |
 | --- | --- | --- |
 | iOS source build | XcodeGen generation; iOS Simulator compile | GitHub Actions CI |
-| Calculation logic | All XCTest suites, including geometry, unit conversion, fraction input | GitHub Actions CI |
+| Calculation logic | All Foundation-only XCTest suites, including geometry, unit conversion, fraction input | Ubuntu SwiftPM workflow; iOS XCTest also required |
 | Tab navigation | Home, Camera, Plan, Projects and Settings open without quitting | New XCUITest simulator smoke |
 | Eight bend types | Offset, 3-point saddle, kick, arc, rolling offset, 90° stub, 4-point saddle, compound 90°; verify positive values and rejection of invalid inputs | CorePurposeSmokeTests added; 10 independent numeric checks passed; Swift XCTest and manual UI pending |
 | Unit conversion | mm/cm/in switching preserves physical dimensions; fractions and decimal commas; marks and stock list conversion | XCTest and simulator build; user-entered workflow pending |
@@ -40,5 +40,6 @@ This matrix distinguishes **verified automated checks** from **physical-device c
 - AR bend markers are removed when the user resets endpoints, even without another camera tap.
 - Camera diameter estimates reject non-finite values.
 - The camera level keeps one motion sensor manager across SwiftUI view refreshes instead of creating a fresh manager on redraw.
+- Foundation-only core tests can run as a standalone Swift package on a Linux runner, independently of the queued macOS iOS build.
 
 These are code-level fixes; they are **not proof of iPhone runtime success**. The macOS CI job and a supported physical iPhone remain mandatory release checks.
