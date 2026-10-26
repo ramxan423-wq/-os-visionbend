@@ -15,7 +15,8 @@ struct CameraLevelView: View {
     @State private var rollZero = 0.0
     @State private var calibrated = false
     @State private var targetAngle = "90"
-    private let motion = CMMotionManager()
+    // Keep the active sensor manager stable across SwiftUI view updates.
+    @State private var motion = CMMotionManager()
 
     var body: some View {
         ZStack {

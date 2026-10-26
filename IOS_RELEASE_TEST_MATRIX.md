@@ -39,5 +39,6 @@ This matrix distinguishes **verified automated checks** from **physical-device c
 - Photo inspection now supports both camera capture (where available) and the photo library; failed scans clear the previous pixel estimate.
 - AR bend markers are removed when the user resets endpoints, even without another camera tap.
 - Camera diameter estimates reject non-finite values.
+- The camera level keeps one motion sensor manager across SwiftUI view refreshes instead of creating a fresh manager on redraw.
 
 These are code-level fixes; they are **not proof of iPhone runtime success**. The macOS CI job and a supported physical iPhone remain mandatory release checks.
