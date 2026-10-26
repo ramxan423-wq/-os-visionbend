@@ -9,6 +9,9 @@ final class BenderProfileTests: XCTestCase {
         XCTAssertEqual(restored.unitCode, 2)
         XCTAssertEqual(restored.referenceMark, "Arrow")
         XCTAssertEqual(restored.model, "51606")
+        let metric = try XCTUnwrap(restored.calibratedValues(in: .millimeters))
+        XCTAssertEqual(metric.takeUp, 127, accuracy: 0.0001)
+        XCTAssertEqual(metric.radius, 117.475, accuracy: 0.0001)
     }
 
     func testLegacyProfileLoadsWithoutAssumingItsUnits() throws {
@@ -18,5 +21,6 @@ final class BenderProfileTests: XCTestCase {
         let restored = try JSONDecoder().decode(BenderProfile.self, from: Data(oldJSON.utf8))
         XCTAssertNil(restored.unitCode)
         XCTAssertNil(restored.referenceMark)
+        XCTAssertNil(restored.calibratedValues(in: .millimeters))
     }
 }

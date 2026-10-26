@@ -56,6 +56,21 @@ struct MultiBendPlannerView: View {
     @State private var showAdvancedBenderOptions = false
     private var unitLabel: String { selectedUnits == 0 ? "mm" : selectedUnits == 1 ? "cm" : "in" }
     private let directions = ["Up", "Down", "Left", "Right"]
+    private var requiresPresetRun: Bool {
+        ["3-Point Saddle", "4-Point Saddle", "Rolling Offset", "Back-to-Back 90°", "Compound 90°"].contains(preset)
+    }
+    private var requiresPresetStart: Bool {
+        !["Custom", "90° Stub", "Back-to-Back 90°", "3-Point Saddle"].contains(preset) &&
+        !(preset == "Offset" && verifiedModelID.hasPrefix("greenlee-555"))
+    }
+    private var presetRunLabel: String {
+        switch preset {
+        case "Back-to-Back 90°": return "Back-edge distance between parallel walls (" + unitLabel + ")"
+        case "Compound 90°": return "Straight tangent between the two 90° arcs (" + unitLabel + ")"
+        case "3-Point Saddle": return "Obstruction center from conduit start (" + unitLabel + ")"
+        default: return l("Run / clearance")
+        }
+    }
     private var savedBenderProfiles: [BenderProfile] {
         (try? JSONDecoder().decode([BenderProfile].self, from: storedBenderProfiles)) ?? []
     }
@@ -85,10 +100,14 @@ struct MultiBendPlannerView: View {
                     backToBackInstructions = ""
                     if ["90° Stub", "Back-to-Back 90°", "Compound 90°"].contains(newPreset) { presetAngle = "90" }
                 }
-                TextField(l("Rise / desired stub"), text: $presetRise).keyboardType(.decimalPad)
+                if !["Compound 90°", "Segmented Arc"].contains(preset) {
+                    TextField(l("Rise / desired stub"), text: $presetRise).keyboardType(.decimalPad)
+                }
                 TextField(l("Angle"), text: $presetAngle).keyboardType(.decimalPad)
-                TextField(l("Run / clearance"), text: $presetRun).keyboardType(.decimalPad)
-                if !["Custom", "90° Stub", "Back-to-Back 90°"].contains(preset) {
+                if requiresPresetRun {
+                    TextField(presetRunLabel, text: $presetRun).keyboardType(.decimalPad)
+                }
+                if requiresPresetStart {
                     TextField("First theoretical station from conduit start (" + unitLabel + ")", text: $presetStart)
                         .keyboardType(.decimalPad)
                 }
@@ -96,6 +115,10 @@ struct MultiBendPlannerView: View {
                     TextField("Number of equal bends (2–30)", text: $segmentCount)
                         .keyboardType(.numberPad)
                     Text("Requires a verified centerline radius. Positions are centerline stations, not shoe reference marks.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if preset == "Compound 90°" {
+                    Text("The station positions use centerline radius and the straight tangent you enter. They are not bender arrow/hook-front marks.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 if preset == "Back-to-Back 90°" {
@@ -333,10 +356,7 @@ struct MultiBendPlannerView: View {
 
     private func applySavedBenderProfile() {
         guard let profile = savedBenderProfiles.first(where: { $0.id.uuidString == selectedSavedProfileID }) else { return }
-        guard let code = profile.unitCode, let originalUnit = MeasurementUnit(rawValue: code),
-              let savedTakeUp = FieldInputNumber.parse(profile.takeUp, unit: originalUnit), savedTakeUp >= 0,
-              let savedRadius = FieldInputNumber.parse(profile.radius, unit: originalUnit), savedRadius > 0,
-              let originalMark = profile.referenceMark, ["arrow", "hook front"].contains(originalMark.lowercased()) else {
+        guard let values = profile.calibratedValues(in: currentUnit) else {
             message = "This saved profile has missing units, values or reference mark. Re-enter and save it in Bender Reference before using it for physical marks."
             showAdvancedBenderOptions = true
             return
@@ -348,9 +368,9 @@ struct MultiBendPlannerView: View {
         benderModel = profile.model
         conduitType = profile.conduitType
         tradeSize = profile.conduitSize
-        referenceMark = originalMark
-        takeUp = String(format: "%.4f", originalUnit.convert(savedTakeUp, to: currentUnit))
-        centerlineRadius = String(format: "%.4f", originalUnit.convert(savedRadius, to: currentUnit))
+        referenceMark = values.referenceMark
+        takeUp = String(format: "%.4f", values.takeUp)
+        centerlineRadius = String(format: "%.4f", values.radius)
         correction = "0"
         manualSource = profile.source
         message = "Saved field profile loaded. Confirm the exact model, manual, reference marks and springback on the real bender."
@@ -367,15 +387,17 @@ struct MultiBendPlannerView: View {
             return
         }
         func number(_ value: String) -> Double? { dimension(value) }
-        guard let rise = number(presetRise), let angle = number(presetAngle) else {
+        guard let angle = number(presetAngle) else {
             message = "Enter valid dimensions and angle for this preset."
             return
         }
-        let run = number(presetRun) ?? (preset == "90° Stub" ? 0 : .nan)
+        let needsRise = !["Compound 90°", "Segmented Arc"].contains(preset)
+        let rise = number(presetRise) ?? (needsRise ? .nan : 0)
+        let run = requiresPresetRun ? (number(presetRun) ?? .nan) : 0
         guard
               rise.isFinite, angle.isFinite, run.isFinite,
-              rise > 0, angle > 0, angle <= (preset == "Segmented Arc" ? 180 : 90),
-              (run > 0 || preset == "90° Stub"), length > 0 else {
+              (!needsRise || rise > 0), angle > 0, angle <= (preset == "Segmented Arc" ? 180 : 90),
+              (!requiresPresetRun || run > 0), length > 0 else {
             message = "Enter valid positive dimensions and an angle supported by this preset."
             return
         }
@@ -432,7 +454,8 @@ struct MultiBendPlannerView: View {
             message = "Back-to-back guide ready: first absolute arrow mark plus second post-bend star instruction."
             return
         }
-        guard let first = number(presetStart), first.isFinite, first >= 0 else {
+        let first = requiresPresetStart ? (number(presetStart) ?? .nan) : 0
+        guard first.isFinite, first >= 0 else {
             message = "Enter a valid theoretical starting station from the conduit end."
             return
         }

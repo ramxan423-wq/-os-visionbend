@@ -14,4 +14,15 @@ struct BenderProfile: Codable, Identifiable {
     // Legacy values must be checked manually instead of guessing their units.
     var unitCode: Int? = nil
     var referenceMark: String? = nil
+
+    func calibratedValues(in unit: MeasurementUnit) -> (takeUp: Double, radius: Double, referenceMark: String)? {
+        guard let code = unitCode, let from = MeasurementUnit(rawValue: code),
+              let savedTakeUp = FieldInputNumber.parse(takeUp, unit: from), savedTakeUp >= 0,
+              let savedRadius = FieldInputNumber.parse(radius, unit: from), savedRadius > 0,
+              let referenceMark, ["arrow", "hook front"].contains(referenceMark.lowercased()) else { return nil }
+        let convertedTakeUp = from.convert(savedTakeUp, to: unit)
+        let convertedRadius = from.convert(savedRadius, to: unit)
+        guard convertedTakeUp.isFinite, convertedRadius.isFinite else { return nil }
+        return (convertedTakeUp, convertedRadius, referenceMark)
+    }
 }
