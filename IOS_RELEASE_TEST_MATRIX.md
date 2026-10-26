@@ -5,7 +5,6 @@ This matrix distinguishes **verified automated checks** from **physical-device c
 | Area | Scenarios | Execution |
 | --- | --- | --- |
 | iOS source build | XcodeGen generation; iOS Simulator compile | GitHub Actions CI |
-| Watch app build | watchOS Simulator target compiles | GitHub Actions CI |
 | Calculation logic | All XCTest suites, including geometry, unit conversion, fraction input | GitHub Actions CI |
 | Tab navigation | Home, Camera, Plan, Projects and Settings open without quitting | New XCUITest simulator smoke |
 | Eight bend types | Offset, 3-point saddle, kick, arc, rolling offset, 90° stub, 4-point saddle, compound 90°; verify positive values and rejection of invalid inputs | Existing unit coverage, manual UI pending |
@@ -18,17 +17,16 @@ This matrix distinguishes **verified automated checks** from **physical-device c
 | Photo conduit estimation | Library access, sample reference, no reference, no detected contour | Real images/device test required |
 | AR measurement | Supported and unsupported device; set two points and reset | ARKit device test required |
 | LiDAR depth | Unsupported-device fallback; depth quality and measurement reliability | LiDAR-capable device required |
-| Watch messaging | Paired watch app, marking transfer, reconnection | Paired physical devices required |
-| Localization | Full app strings, layout, long/RTL languages, number entry | Incomplete; full review needed |
-| Premium | App Store Connect subscription IDs, products loading, monthly/yearly, purchase, restore, entitlement | Not configured; blocks paid-release signoff |
+| Localization | English-only UI on English and non-English iPhones; number entry | English fallback implemented; device review pending |
+| Paid distribution | App Store Connect up-front app price; no subscription or paywall screen | Source removes StoreKit paywall; storefront price must be verified |
 | Signing | Compatible P12, matching provisioning profile, export signed IPA | Requires Apple credentials and archive dispatch |
 | TestFlight | Upload IPA, install on real device, crash and transaction testing | Pending |
 
 ## Ship gate
 1. Automated iOS build and all required tests are green **for the exact final commit**.
 2. Camera and AR/LiDAR behavior is tested on supported/unsupported iPhone models.
-3. Real-device navigation and localization checks are complete.
-4. Any advertised Premium plans are configured and verified in StoreKit.
+3. Real-device navigation and English-only localization checks are complete.
+4. Paid download price and App Store listing are configured correctly; no in-app subscription products advertised.
 5. Signed App Store archive / IPA and TestFlight installation succeed.
 6. Manufacturer-specific dimensions and bending marks are validated against real bender manuals and a physical test bend.
 

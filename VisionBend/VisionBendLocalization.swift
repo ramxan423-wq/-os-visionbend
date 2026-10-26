@@ -127,11 +127,19 @@ enum VisionBendLocalization {
     ]
 
     static func text(_ english: String, turkish: String? = nil, language: String) -> String {
-        let code = language == "system" ? (Locale.preferredLanguages.first ?? "en") : language
-        let normalized = code == "zh-Hans" || code == "zh-Hant" || code == "zh-HK" ? (code == "zh-HK" ? "zh-Hant" : code) : String(code.split(separator: "-").first ?? "en")
-        if let translated = strings[english]?[code] ?? strings[english]?[normalized] {
-            return translated
+        // Only English is fully supported in this release. Do not display partial
+        // translations, even when older installs have a saved language choice.
+        english
+    }
+
+    static func resolvedLanguage(preferredLanguages: [String] = Locale.preferredLanguages) -> String {
+        // Retain automatic detection for future fully supported locales.
+        // With English as the only shipped locale every device safely falls back to en.
+        let supported: Set<String> = ["en"]
+        for preferred in preferredLanguages {
+            let base = String(preferred.split(separator: "-").first ?? "").lowercased()
+            if supported.contains(base) { return base }
         }
-        return normalized == "tr" ? (turkish ?? english) : english
+        return "en"
     }
 }

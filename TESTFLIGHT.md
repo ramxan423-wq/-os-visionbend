@@ -1,12 +1,13 @@
 # TestFlight preparation — VisionBend iOS
 
 ## Current state
-The project is a partial native SwiftUI port. It has not been verified to compile or run on a physical iPhone, and has not been uploaded to TestFlight. The signed archive workflow produces an **xcarchive**, not an IPA, and does not upload to App Store Connect.
+The project is a native SwiftUI port with experimental camera/AR functionality. A complete physical-iPhone validation and accepted TestFlight build have not been verified here. The signed archive workflow produces an **xcarchive** and does not by itself upload to App Store Connect.
 
 ## Prerequisites
 1. Active Apple Developer Program membership and App Store Connect access.
 2. App Store Connect app record with the **same bundle identifier** as `project.yml`: `com.visionbend.conduit` (verify this ID is available for your team; update it before first upload if not).
 3. App Store distribution certificate (.p12 and password), App Store provisioning profile matching the bundle ID, and Apple Team ID.
+4. Configure the **one-time paid app price** in App Store Connect. VisionBend does not use monthly or yearly subscriptions.
 4. GitHub Actions repository secrets:
    - `IOS_DISTRIBUTION_P12_BASE64`: base64 of the .p12 certificate
    - `IOS_DISTRIBUTION_P12_PASSWORD`: password for .p12

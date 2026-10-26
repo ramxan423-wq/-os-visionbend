@@ -3,10 +3,11 @@ import XCTest
 final class VisionBendNavigationUITests: XCTestCase {
     func testPrimaryTabsCanBeOpened() {
         let app = XCUIApplication()
-        // Start with English and completed language onboarding for deterministic UI smoke tests.
+        // Force a non-English phone locale to verify the English-only fallback.
         app.launchArguments = [
-            "-visionbend.languageChosen", "YES",
-            "-visionbend.language", "en"
+            "-AppleLanguages", "(tr)",
+            "-AppleLocale", "tr_TR",
+            "-visionbend.language", "tr"
         ]
         app.launch()
 
@@ -18,5 +19,8 @@ final class VisionBendNavigationUITests: XCTestCase {
             tab.tap()
             XCTAssertTrue(app.state == .runningForeground, "App unexpectedly closed after opening \(name)")
         }
+        XCTAssertFalse(app.buttons["Premium"].exists, "A paid-download app must not show a subscription paywall")
+        tabs.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["English"].waitForExistence(timeout: 10))
     }
 }

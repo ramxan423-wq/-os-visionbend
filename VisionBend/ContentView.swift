@@ -4,7 +4,6 @@ struct ContentView: View {
     @StateObject private var history = BendHistory()
     @AppStorage("visionbend.appearance") private var appearance = 1
     @AppStorage("visionbend.language") private var language = "system"
-    @AppStorage("visionbend.languageChosen") private var languageChosen = false
     @AppStorage("visionbend.units") private var units = 0
     @State private var previousUnit = 0
     @State private var showHistory = false
@@ -13,7 +12,6 @@ struct ContentView: View {
     @State private var showConduitScan = false
     @State private var showDepthScan = false
     @State private var showAR = false
-    @State private var showPremium = false
     @State private var showReference = false
     @State private var showMultiBend = false
     @State private var showCutPlanner = false
@@ -27,9 +25,8 @@ struct ContentView: View {
     private let accent = Color(red: 1, green: 0.45, blue: 0.08)
     private let bendNamesTR = ["Offset (Kaydırma)", "3 Nokta Eyer", "Tek Açılı Büküm", "Yay Büküm", "Çapraz Offset", "90° Dik Çıkış", "4 Nokta Eyer", "Birleşik 90°"]
     private let names = ["Offset", "3-Point Saddle", "Kick", "Arc", "Rolling Offset", "90° Stub", "4-Point Saddle", "Compound 90°"]
-    private var turkish: Bool { language == "tr" || (language == "system" && Locale.current.language.languageCode?.identifier == "tr") }
     private func t(_ tr: String, _ en: String) -> String { VisionBendLocalization.text(en, turkish: tr, language: language) }
-    private var activeLocale: Locale { language == "system" ? .current : Locale(identifier: language) }
+    private var activeLocale: Locale { Locale(identifier: VisionBendLocalization.resolvedLanguage()) }
     private var selectedMode: Int { names.indices.contains(mode) ? mode : 0 }
     private var unitName: String { units == 0 ? "mm" : units == 1 ? "cm" : "in" }
     private var firstLabel: String {
@@ -67,6 +64,8 @@ struct ContentView: View {
         .environment(\.locale, activeLocale)
         .preferredColorScheme(appearance == 0 ? nil : appearance == 1 ? .light : .dark)
         .onAppear {
+            // Migrate any previously saved language choice to the only shipped locale.
+            language = VisionBendLocalization.resolvedLanguage()
             if !names.indices.contains(mode) { mode = 0 }
             previousUnit = units
         }
@@ -117,16 +116,6 @@ struct ContentView: View {
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button(t("Bitti", "Done")) { showAR = false }
-                        }
-                    }
-            }
-        }
-        .sheet(isPresented: $showPremium) {
-            NavigationStack {
-                SubscriptionView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(t("Bitti", "Done")) { showPremium = false }
                         }
                     }
             }
@@ -308,12 +297,12 @@ struct ContentView: View {
     private var settingsPage: some View {
         List {
             Section(t("Uygulama dili", "App language")) {
-                Button {
-                    languageChosen = false
-                } label: {
-                    Label(VisionBendLanguages.name(for: language), systemImage: "globe")
+                HStack {
+                    Label("Language", systemImage: "globe")
+                    Spacer()
+                    Text("English").foregroundStyle(.secondary)
                 }
-                Text(t("Dili değiştirmek için dokunun.", "Tap to change language."))
+                Text("Uses your iPhone language when available. English is currently the only supported language.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section(t("Görünüm", "Appearance")) {
@@ -325,7 +314,6 @@ struct ContentView: View {
             }
             Button { showSettings = true } label: { Label(t("Ölçü birimleri", "Units"), systemImage: "slider.horizontal.3") }
             Button { showReference = true } label: { Label(t("Bükücü kataloğu", "Bender catalog"), systemImage: "book") }
-            Button { showPremium = true } label: { Label("Premium", systemImage: "star") }
         }.tint(accent)
     }
 
