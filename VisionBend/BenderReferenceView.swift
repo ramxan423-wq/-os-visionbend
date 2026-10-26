@@ -82,9 +82,10 @@ struct BenderReferenceView: View {
     private func saveProfile() {
         guard !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !conduitSize.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let t = Double(takeUp.replacingOccurrences(of: ",", with: ".")), t.isFinite, t >= 0,
               let rad = Double(radius.replacingOccurrences(of: ",", with: ".")), rad.isFinite, rad > 0 else {
-            message = "Enter a model, conduit size, nonnegative take-up and positive radius."
+            message = "Enter a model, conduit size, manufacturer manual source, nonnegative take-up and positive radius."
             return
         }
         profiles.insert(BenderProfile(manufacturer: manufacturer, model: model, conduitType: conduitType, conduitSize: conduitSize, takeUp: takeUp, radius: radius, notes: notes, source: source, unitCode: selectedUnits, referenceMark: referenceMark), at: 0)
