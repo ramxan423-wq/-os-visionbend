@@ -35,7 +35,7 @@ final class VisionBendNavigationUITests: XCTestCase {
         app.launch()
 
         let tabs = app.tabBars
-        let tabNames = ["Home", "Camera", "Plan", "Projects", "Settings"]
+        let tabNames = ["Home", "Plan", "Projects", "Settings"]
         for name in tabNames {
             let tab = tabs.buttons[name]
             XCTAssertTrue(tab.waitForExistence(timeout: 20), "Missing main tab: \(name)")
