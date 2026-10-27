@@ -296,15 +296,6 @@ struct ContentView: View {
     }
     private var settingsPage: some View {
         List {
-            Section(t("Uygulama dili", "App language")) {
-                HStack {
-                    Label("Language", systemImage: "globe")
-                    Spacer()
-                    Text("English").foregroundStyle(.secondary)
-                }
-                Text("Uses your iPhone language when available. English is currently the only supported language.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
             Section(t("Görünüm", "Appearance")) {
                 Picker(t("Tema", "Theme"), selection: $appearance) {
                     Text(t("Beyaz", "White")).tag(1)
