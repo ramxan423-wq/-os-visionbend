@@ -8,10 +8,6 @@ struct ContentView: View {
     @State private var previousUnit = 0
     @State private var showHistory = false
     @State private var showSettings = false
-    @State private var showCamera = false
-    @State private var showConduitScan = false
-    @State private var showDepthScan = false
-    @State private var showAR = false
     @State private var showReference = false
     @State private var showMultiBend = false
     @State private var showCutPlanner = false
@@ -51,14 +47,12 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             NavigationStack { homePage.navigationTitle("VisionBend").navigationDestination(for: Int.self) { index in calculatorPage.onAppear { if mode != index { mode = index; height = ""; angle = ""; output = ""; errorMessage = "" } }.navigationTitle(t(bendNamesTR[index], names[index])).navigationBarTitleDisplayMode(.inline) } }
                 .tabItem { Label(t("Ana Sayfa", "Home"), systemImage: "house.fill") }.tag(0)
-            NavigationStack { cameraPage.navigationTitle(t("Kamera", "Camera")) }
-                .tabItem { Label(t("Kamera", "Camera"), systemImage: "camera") }.tag(1)
             NavigationStack { planningPage.navigationTitle(t("Planlama", "Planning")) }
-                .tabItem { Label(t("Plan", "Plan"), systemImage: "ruler") }.tag(2)
+                .tabItem { Label(t("Plan", "Plan"), systemImage: "ruler") }.tag(1)
             NavigationStack { projectsPage.navigationTitle(t("Projelerim", "Projects")) }
-                .tabItem { Label(t("Projeler", "Projects"), systemImage: "folder") }.tag(3)
+                .tabItem { Label(t("Projeler", "Projects"), systemImage: "folder") }.tag(2)
             NavigationStack { settingsPage.navigationTitle(t("Ayarlar", "Settings")) }
-                .tabItem { Label(t("Ayarlar", "Settings"), systemImage: "gearshape") }.tag(4)
+                .tabItem { Label(t("Ayarlar", "Settings"), systemImage: "gearshape") }.tag(3)
         }
         .tint(accent)
         .environment(\.locale, activeLocale)
@@ -110,16 +104,6 @@ struct ContentView: View {
                     }
             }
         }
-        .sheet(isPresented: $showAR) {
-            NavigationStack {
-                ARMeasureView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(t("Bitti", "Done")) { showAR = false }
-                        }
-                    }
-            }
-        }
         .sheet(isPresented: $showHistory) { ProjectHistoryView(history: history) }
         .sheet(isPresented: $showSettings) {
             NavigationStack {
@@ -129,32 +113,6 @@ struct ContentView: View {
                             Button(t("Bitti", "Done")) { showSettings = false }
                         }
                     }
-            }
-        }
-        .sheet(isPresented: $showDepthScan) {
-            NavigationStack {
-                DepthConduitScanView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(t("Bitti", "Done")) { showDepthScan = false }
-                        }
-                    }
-            }
-        }
-        .sheet(isPresented: $showConduitScan) {
-            NavigationStack {
-                ConduitScanView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(t("Bitti", "Done")) { showConduitScan = false }
-                        }
-                    }
-            }
-        }
-        .sheet(isPresented: $showCamera) {
-            NavigationStack {
-                CameraLevelView()
-                    .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(t("Bitti", "Done")) { showCamera = false } } }
             }
         }
     }
@@ -188,11 +146,6 @@ struct ContentView: View {
                 }
                 Text(t("Diğer Araçlar", "Other Tools")).font(.title3.bold())
                 Button { selectedTab = 1 } label: {
-                    Label(t("Kamera, AR ve LiDAR Ölçüm", "Camera, AR and LiDAR"), systemImage: "camera.viewfinder")
-                        .frame(maxWidth: .infinity, alignment: .leading).padding()
-                }
-                .background(Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
-                Button { selectedTab = 2 } label: {
                     Label(t("Çoklu Büküm ve Kesim Planlama", "Multi-bend and Cut Planning"), systemImage: "ruler")
                         .frame(maxWidth: .infinity, alignment: .leading).padding()
                 }
@@ -266,20 +219,6 @@ struct ContentView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }.padding()
         }
-    }
-    private var cameraPage: some View {
-        List {
-            Section(t("Ölçüm araçları", "Measurement tools")) {
-                Button { showCamera = true } label: { Label(t("Kamera terazisi", "Camera level"), systemImage: "camera.viewfinder") }
-                Button { showConduitScan = true } label: { Label(t("Boruyu fotoğrafla tara", "Conduit photo scan"), systemImage: "camera.metering.center.weighted") }
-                Button { showDepthScan = true } label: { Label(t("Derinlik destekli tarama (LiDAR)", "Depth-assisted scan (LiDAR)"), systemImage: "viewfinder") }
-                Button { showAR = true } label: { Label(t("AR mesafe ölçümü", "AR measure"), systemImage: "ruler") }
-            }
-            Section {
-                Text(t("LiDAR ölçümü yalnızca destekleyen cihazlarda çalışır. Fotoğrafla çap tahmini için aynı düzlemde ölçüsü bilinen bir referans gerekir. AR işaretlerini gerçek ölçüyle doğrulayın.", "LiDAR requires a compatible device. Photo diameter estimates need a known-size reference in the same plane. Verify AR marks with physical measurements."))
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
-        }.tint(accent)
     }
     private var planningPage: some View {
         List {
