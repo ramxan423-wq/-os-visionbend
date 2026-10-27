@@ -29,6 +29,17 @@ struct SettingsView: View {
                 Text(t("Birim değişince mevcut hesaplama girişleri dönüştürülür. Kaydedilmiş kayıtlar eski değerlerini korur.", "Changing units converts current calculator inputs. Saved records retain their original values."))
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section("Legal & Support") {
+                Link(destination: URL(string: "https://github.com/ramxan423-wq/-os-visionbend/blob/main/docs/privacy.md")!) {
+                    Label("Privacy Policy", systemImage: "hand.raised")
+                }
+                Link(destination: URL(string: "https://github.com/ramxan423-wq/-os-visionbend/blob/main/docs/support.md")!) {
+                    Label("Support", systemImage: "questionmark.circle")
+                }
+                Link(destination: URL(string: "https://github.com/ramxan423-wq/-os-visionbend/blob/main/docs/terms.md")!) {
+                    Label("Terms of Use", systemImage: "doc.text")
+                }
+            }
             Section(t("Güvenlik", "Safety")) {
                 Text(t("Hesaplamalar teoriktir. Kullanacağınız bükücünün yarıçapını, take-up payını ve düzeltmelerini sahada doğrulayın.", "Calculations are theoretical. Verify bend radius, take-up and deductions for your exact bender before use."))
             }
